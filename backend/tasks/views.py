@@ -3,6 +3,7 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from .models import User, Task, Comment
 from .serializers import UserSerializer, TaskSerializer, CommentSerializer
+from .permissions import IsCommentOwnerOrAdmin
 
 # Sadece adminlerin kullanıcı yönetimi yapabilmesi için özel izin sınıfı
 class IsAdminUser(permissions.BasePermission):
@@ -61,7 +62,7 @@ class TaskViewSet(viewsets.ModelViewSet):
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()
     serializer_class = CommentSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    permission_classes = [permissions.IsAuthenticated, IsCommentOwnerOrAdmin]
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

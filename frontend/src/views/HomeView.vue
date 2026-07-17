@@ -1,6 +1,6 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import api from '../api' // api.js dosyasını import ettik
+import api from '../api'
 
 const summary = ref({ todo: 0, in_progress: 0, done: 0 })
 
@@ -20,21 +20,39 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="home">
-    <h1>Dashboard</h1>
-    <div style="display: flex; gap: 20px;">
-      <div class="card">TODO: {{ summary.todo }}</div>
-      <div class="card">IN PROGRESS: {{ summary.in_progress }}</div>
-      <div class="card">DONE: {{ summary.done }}</div>
-    </div>
-  </div>
+  <v-container class="py-8">
+    <h1 class="text-h4 font-weight-bold text-indigo-darken-4 mb-6">
+      <v-icon icon="mdi-view-dashboard" class="mr-2" color="indigo"></v-icon>
+      Dashboard (Özet Tablosu)
+    </h1>
+    <v-row>
+      <!-- TODO Kartı -->
+      <v-col cols="12" md="4">
+        <v-card class="pa-6 rounded-lg text-center" border elevation="1">
+          <div class="text-subtitle-1 font-weight-bold text-grey-darken-1 mb-2">TODO (Yapılacaklar)</div>
+          <div class="text-h3 font-weight-bold text-grey-darken-3">{{ summary.todo }}</div>
+        </v-card>
+      </v-col>
+      
+      <!-- IN PROGRESS Kartı -->
+      <v-col cols="12" md="4">
+        <v-card class="pa-6 rounded-lg text-center" border elevation="1">
+          <div class="text-subtitle-1 font-weight-bold text-blue mb-2">IN PROGRESS (İşlemde)</div>
+          <div class="text-h3 font-weight-bold text-blue-darken-2">{{ summary.in_progress }}</div>
+        </v-card>
+      </v-col>
+      
+      <!-- DONE Kartı -->
+      <v-col cols="12" md="4">
+        <v-card class="pa-6 rounded-lg text-center" border elevation="1">
+          <div class="text-subtitle-1 font-weight-bold text-green mb-2">DONE (Tamamlandı)</div>
+          <div class="text-h3 font-weight-bold text-green-darken-2">{{ summary.done }}</div>
+        </v-card>
+      </v-col>
+    </v-row>
+  </v-container>
 </template>
 
 <style scoped>
-.card {
-  padding: 20px;
-  border: 1px solid #ccc;
-  border-radius: 8px;
-  background-color: #f9f9f9;
-}
+/* Vuetify bileşenleri kullanıldığı için özel stil tanımlarına gerek kalmadı */
 </style>

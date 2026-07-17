@@ -1,5 +1,5 @@
 <template>
-  <v-app>
+  <v-app :theme="currentTheme">
     <!-- Nav Drawer (Yan Menü) - Sadece Giriş Yapılmışsa Göster -->
     <v-navigation-drawer
       v-if="isLoggedIn"
@@ -50,7 +50,7 @@
     </v-navigation-drawer>
 
     <!-- Top Bar (Üst Menü) - Sadece Giriş Yapılmışsa Göster -->
-    <v-app-bar v-if="isLoggedIn" app color="white" elevation="1">
+    <v-app-bar v-if="isLoggedIn" app color="surface" elevation="1">
       <v-app-bar-nav-icon @click="drawer = !drawer"></v-app-bar-nav-icon>
       
       <v-app-bar-title class="font-weight-medium">Panel</v-app-bar-title>
@@ -67,7 +67,7 @@
 
       <!-- Tema Değiştirme Butonu -->
       <v-btn icon class="mr-2" color="indigo-darken-1" @click="toggleTheme" title="Tema Değiştir">
-        <v-icon>{{ theme.global.name.value === 'dark' ? 'mdi-weather-sunny' : 'mdi-weather-night' }}</v-icon>
+        <v-icon>{{ currentTheme === 'dark' ? 'mdi-weather-sunny' : 'mdi-weather-night' }}</v-icon>
       </v-btn>
 
       <!-- Çıkış Yap Butonu -->
@@ -77,14 +77,14 @@
     </v-app-bar>
 
     <!-- Ana İçerik Alanı -->
-    <v-main class="bg-grey-lighten-4">
+    <v-main>
       <router-view />
     </v-main>
   </v-app>
 </template>
 
 <script setup>
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTheme } from 'vuetify'
 
@@ -96,6 +96,8 @@ const drawer = ref(true)
 const isLoggedIn = ref(false)
 const isStaff = ref(false)
 const username = ref('')
+
+const currentTheme = computed(() => theme.global.name.value)
 
 const updateLoginStatus = () => {
   isLoggedIn.value = !!localStorage.getItem('token')

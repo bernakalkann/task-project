@@ -29,7 +29,7 @@
     <v-row class="px-2">
       <!-- TODO KOLONU -->
       <v-col cols="12" md="4">
-        <v-card class="bg-grey-lighten-3 pa-3 column-card" elevation="0">
+        <v-card :class="currentTheme === 'dark' ? 'bg-grey-darken-4' : 'bg-grey-lighten-3'" class="pa-3 column-card" elevation="0">
           <div class="d-flex justify-space-between align-center mb-4 px-2">
             <span class="font-weight-bold text-uppercase text-grey-darken-2 tracking-wider">
               TODO (Yapılacaklar)
@@ -75,7 +75,7 @@
 
       <!-- IN PROGRESS KOLONU -->
       <v-col cols="12" md="4">
-        <v-card class="bg-blue-lighten-5 pa-3 column-card" elevation="0">
+        <v-card :class="currentTheme === 'dark' ? 'bg-blue-darken-4' : 'bg-blue-lighten-5'" class="pa-3 column-card" elevation="0">
           <div class="d-flex justify-space-between align-center mb-4 px-2">
             <span class="font-weight-bold text-uppercase text-blue-darken-3 tracking-wider">
               IN PROGRESS (İşlemde)
@@ -121,7 +121,7 @@
 
       <!-- DONE KOLONU -->
       <v-col cols="12" md="4">
-        <v-card class="bg-green-lighten-5 pa-3 column-card" elevation="0">
+        <v-card :class="currentTheme === 'dark' ? 'bg-green-darken-4' : 'bg-green-lighten-5'" class="pa-3 column-card" elevation="0">
           <div class="d-flex justify-space-between align-center mb-4 px-2">
             <span class="font-weight-bold text-uppercase text-green-darken-3 tracking-wider">
               DONE (Tamamlandı)
@@ -464,7 +464,11 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useTheme } from 'vuetify'
 import api from '../api'
+
+const theme = useTheme()
+const currentTheme = computed(() => theme.global.name.value)
 
 const tasks = ref([])
 const usersList = ref([])

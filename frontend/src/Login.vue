@@ -38,9 +38,14 @@ const login = async () => {
       password: password.value 
     });
     
-    // Token'ı localStorage'a kaydediyoruz
+    // Token ve kullanıcı bilgilerini localStorage'a kaydediyoruz
     const token = response.data.token;
+    const isStaff = response.data.is_staff;
+    const usernameVal = response.data.username;
+
     localStorage.setItem('token', token);
+    localStorage.setItem('is_staff', String(isStaff));
+    localStorage.setItem('username', usernameVal);
     
     console.log("Giriş başarılı, yönlendiriliyor...");
     
@@ -48,8 +53,13 @@ const login = async () => {
     router.push('/');
     
   } catch (error) {
-    console.error("Giriş başarısız:", error.response?.data);
-    alert("Kullanıcı adı veya şifre hatalı!");
+    console.error("Giriş başarısız Hata Detayı:", error);
+    if (error.response) {
+      console.error("Sunucu Yanıtı:", error.response.data);
+    } else {
+      console.error("Bağlantı Hatası: Sunucu kapalı veya CORS engeli var.");
+    }
+    alert("Kullanıcı adı veya şifre hatalı veya sunucuya bağlanılamadı!");
   }
 }
 </script>

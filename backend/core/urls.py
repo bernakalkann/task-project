@@ -1,8 +1,7 @@
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from tasks.views import UserViewSet, TaskViewSet, CommentViewSet 
-from rest_framework.authtoken.views import obtain_auth_token # <--- Bunu ekle
+from tasks.views import UserViewSet, TaskViewSet, CommentViewSet, CustomObtainAuthToken
 
 # Router otomatik olarak GET, POST, PUT, DELETE URL'lerini oluşturur
 router = DefaultRouter()
@@ -19,7 +18,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     # Tüm API endpointlerini /api/ önekiyle dahil et
     path('api/', include(router.urls)),
-    path('api/login/', obtain_auth_token),
+    path('api/login/', CustomObtainAuthToken.as_view()),
     # DRF'in kendi giriş/çıkış sayfası (geliştirme aşamasında çok işe yarar)
     path('api-auth/', include('rest_framework.urls')),
 ]

@@ -65,6 +65,11 @@
         </span>
       </v-chip>
 
+      <!-- Tema Değiştirme Butonu -->
+      <v-btn icon class="mr-2" color="indigo-darken-1" @click="toggleTheme" title="Tema Değiştir">
+        <v-icon>{{ theme.global.name.value === 'dark' ? 'mdi-weather-sunny' : 'mdi-weather-night' }}</v-icon>
+      </v-btn>
+
       <!-- Çıkış Yap Butonu -->
       <v-btn icon color="red-darken-1" class="mr-2" @click="logout" title="Çıkış Yap">
         <v-icon>mdi-logout</v-icon>
@@ -81,9 +86,11 @@
 <script setup>
 import { ref, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useTheme } from 'vuetify'
 
 const route = useRoute()
 const router = useRouter()
+const theme = useTheme()
 
 const drawer = ref(true)
 const isLoggedIn = ref(false)
@@ -96,9 +103,20 @@ const updateLoginStatus = () => {
   username.value = localStorage.getItem('username') || ''
 }
 
+const toggleTheme = () => {
+  const currentTheme = theme.global.name.value
+  const newTheme = currentTheme === 'dark' ? 'light' : 'dark'
+  theme.global.name.value = newTheme
+  localStorage.setItem('theme', newTheme)
+}
+
 // Sayfa ilk yüklendiğinde durumu kontrol et
 onMounted(() => {
   updateLoginStatus()
+  const savedTheme = localStorage.getItem('theme')
+  if (savedTheme) {
+    theme.global.name.value = savedTheme
+  }
 })
 
 // Rota her değiştiğinde durum bilgisini güncelle

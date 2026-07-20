@@ -19,6 +19,7 @@
       <v-list density="compact" nav class="mt-4">
         <v-list-item prepend-icon="mdi-home" title="Anasayfa" value="home" to="/" color="cyan-accent-3"></v-list-item>
         <v-list-item prepend-icon="mdi-clipboard-text-multiple" title="Görevler" value="tasks" to="/tasks" color="cyan-accent-3"></v-list-item>
+        <v-list-item prepend-icon="mdi-account-circle" title="Profilim" value="profile" to="/profile" color="cyan-accent-3"></v-list-item>
         <v-list-item v-if="isStaff" prepend-icon="mdi-account-group" title="Kullanıcılar" value="users" to="/users" color="cyan-accent-3"></v-list-item>
       </v-list>
     </v-navigation-drawer>

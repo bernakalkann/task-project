@@ -1,7 +1,5 @@
 from rest_framework import serializers
-from .models import User, Task, Comment
-from rest_framework import serializers
-from .models import Notification
+from .models import User, Task, Comment, UserProfile, Notification
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=False, style={'input_type': 'password'})
@@ -57,3 +55,33 @@ class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notification
         fields = ['id', 'message', 'is_read', 'created_at']
+
+class UserProfileSerializer(serializers.ModelSerializer):
+    first_name = serializers.CharField(source='user.first_name', required=False, allow_blank=True)
+    last_name = serializers.CharField(source='user.last_name', required=False, allow_blank=True)
+    email = serializers.EmailField(source='user.email', required=False, allow_blank=True)
+    username = serializers.CharField(source='user.username', read_only=True)
+
+    class Meta:
+        model = UserProfile
+        fields = [
+            'id', 'username', 'first_name', 'last_name', 'email',
+            'department', 'position', 'bio', 'phone', 'avatar', 'created_at'
+        ]
+        read_only_fields = ['id', 'username', 'created_at']
+
+    def update(self, instance, validated_data):
+        # Birebir ilişkili User modelindeki alanları güncelle
+        user_data = validated_data.pop('user', {})
+        user = instance.user
+        
+        for attr, value in user_data.items():
+            setattr(user, attr, value)
+        user.save()
+
+        # UserProfile modelindeki alanları güncelle
+        for attr, value in validated_data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        return instance

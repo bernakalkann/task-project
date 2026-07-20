@@ -1,7 +1,7 @@
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
-from tasks.models import User, Task, Comment
+from tasks.models import User, Task, Comment, UserProfile
 
 class TaskCollaborationAppTests(APITestCase):
 
@@ -119,3 +119,45 @@ class TaskCollaborationAppTests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response['Content-Type'], 'text/csv')
         self.assertIn('gorevler.csv', response['Content-Disposition'])
+
+    def test_profile_creation_and_api(self):
+        """Kullanıcı oluşturulduğunda profilin otomatik oluştuğunu ve profil API'sinin çalıştığını doğrula."""
+        # Yeni bir kullanıcı oluşturalım, post_save sinyalinin çalıştığını görelim
+        new_user = User.objects.create_user(
+            username='profiletest',
+            email='pt@example.com',
+            password='testpassword'
+        )
+        # Profil otomatik oluşmuş mu kontrol et
+        self.assertTrue(UserProfile.objects.filter(user=new_user).exists())
+        profile = new_user.profile
+        self.assertEqual(profile.department, 'Yazılım')  # varsayılan değer
+
+        # Giriş yapmadan profil API'sini oku (Kimlik doğrulaması hatası almalı)
+        response = self.client.get("/api/profile/")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        # Giriş yaparak profil API'sini oku
+        self.client.force_authenticate(user=new_user)
+        response = self.client.get("/api/profile/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data['username'], 'profiletest')
+        self.assertEqual(response.data['department'], 'Yazılım')
+
+        # Profili güncelle
+        data = {
+            "first_name": "TestAd",
+            "last_name": "TestSoyad",
+            "department": "Tasarım",
+            "position": "Lead Designer",
+            "phone": "555-1234"
+        }
+        response = self.client.patch("/api/profile/", data, format='json')
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        
+        # Veritabanında güncellendi mi kontrol et
+        new_user.refresh_from_db()
+        self.assertEqual(new_user.first_name, "TestAd")
+        self.assertEqual(new_user.last_name, "TestSoyad")
+        self.assertEqual(new_user.profile.department, "Tasarım")
+        self.assertEqual(new_user.profile.position, "Lead Designer")

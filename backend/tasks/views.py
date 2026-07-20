@@ -3,12 +3,9 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
-from .models import User, Task, Comment
-from .serializers import UserSerializer, TaskSerializer, CommentSerializer
+from .models import User, Task, Comment, Notification, UserProfile
+from .serializers import UserSerializer, TaskSerializer, CommentSerializer, NotificationSerializer, UserProfileSerializer
 from .permissions import IsCommentOwnerOrAdmin
-from rest_framework import viewsets, permissions
-from .models import Notification
-from .serializers import NotificationSerializer
 
 # Sadece adminlerin kullanıcı yönetimi yapabilmesi için özel izin sınıfı
 class IsAdminUser(permissions.BasePermission):
@@ -131,3 +128,23 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
         notification.is_read = True
         notification.save()
         return Response({'status': 'ok'})
+
+from rest_framework.views import APIView
+
+class ProfileView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        profile, created = UserProfile.objects.get_or_create(user=request.user)
+        serializer = UserProfileSerializer(profile, context={'request': request})
+        return Response(serializer.data)
+
+    def patch(self, request):
+        profile, created = UserProfile.objects.get_or_create(user=request.user)
+        serializer = UserProfileSerializer(profile, data=request.data, partial=True, context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(serializer.data)
+
+    def put(self, request):
+        return self.patch(request)

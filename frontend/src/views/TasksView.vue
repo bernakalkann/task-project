@@ -32,7 +32,10 @@
         >
           Yeni Görev Ekle
         </v-btn>
-      </v-co    <!-- KANBAN PANOSU -->
+      </v-col>
+    </v-row>
+
+    <!-- KANBAN PANOSU -->
     <v-row class="px-2 flex-nowrap" style="overflow-x: auto; min-height: 80vh; padding-bottom: 24px;">
       <!-- DINAMIK JIRA-STYLE KOLONLAR -->
       <v-col 

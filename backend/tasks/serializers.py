@@ -33,10 +33,12 @@ class CommentSerializer(serializers.ModelSerializer):
 
 class TaskSerializer(serializers.ModelSerializer):
     comments = CommentSerializer(many=True, read_only=True) # Task ile yorumları beraber çekmek için
+    assignee_username = serializers.ReadOnlyField(source='assignee.username')
+    creator_username = serializers.ReadOnlyField(source='creator.username')
 
     class Meta:
         model = Task
-        fields = ['id', 'title', 'definition', 'create_date', 'creator', 'assignee', 'state', 'comments']
+        fields = ['id', 'title', 'definition', 'create_date', 'creator', 'creator_username', 'assignee', 'assignee_username', 'state', 'comments']
         read_only_fields = ['creator'] # creator otomatik olarak atanacak, kullanıcı değiştiremez
 
     def validate_assignee(self, value):

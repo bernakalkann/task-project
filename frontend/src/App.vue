@@ -130,6 +130,7 @@ const logout = () => {
   localStorage.removeItem('token')
   localStorage.removeItem('is_staff')
   localStorage.removeItem('username')
+  localStorage.removeItem('user_id')
   isLoggedIn.value = false
   isStaff.value = false
   username.value = ''

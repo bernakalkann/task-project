@@ -249,6 +249,7 @@
           <!-- Atanan Kişi (Assignee) -->
           <v-col cols="12" sm="6">
             <v-select
+              v-if="isStaff"
               v-model="selectedTask.assignee"
               :items="usersList"
               item-title="username"
@@ -256,9 +257,16 @@
               label="Atanan Kişi"
               variant="outlined"
               density="comfortable"
-              :disabled="!isStaff"
               @update:model-value="changeTaskAssignee"
             ></v-select>
+            <v-text-field
+              v-else
+              :model-value="selectedTask.assignee_username || getAssigneeName(selectedTask.assignee)"
+              label="Atanan Kişi"
+              variant="outlined"
+              density="comfortable"
+              disabled
+            ></v-text-field>
           </v-col>
 
           <!-- Oluşturan ve Tarih Bilgisi -->
@@ -397,9 +405,10 @@
                 ></v-select>
               </v-col>
 
-              <!-- Atanan Kişi (Only editable for admin, pre-selected for regular user) -->
+              <!-- Atanan Kişi -->
               <v-col cols="12" sm="6">
                 <v-select
+                  v-if="isStaff"
                   v-model="addForm.assignee"
                   :items="usersList"
                   item-title="username"
@@ -407,9 +416,16 @@
                   label="Atanan Kişi *"
                   variant="outlined"
                   density="comfortable"
-                  :disabled="!isStaff"
                   :error-messages="addErrors.assignee"
                 ></v-select>
+                <v-text-field
+                  v-else
+                  :model-value="currentUsername"
+                  label="Atanan Kişi"
+                  variant="outlined"
+                  density="comfortable"
+                  disabled
+                ></v-text-field>
               </v-col>
             </v-row>
             <p class="text-caption text-grey-darken-1 mt-1">* işaretli alanlar zorunludur.</p>
@@ -478,7 +494,7 @@ const drawer = ref(false)
 const selectedTask = ref(null)
 
 // Giriş yapan kullanıcının verileri
-const currentUserId = ref(null)
+const currentUserId = ref(parseInt(localStorage.getItem('user_id')) || null)
 const currentUsername = ref(localStorage.getItem('username') || '')
 const isStaff = ref(localStorage.getItem('is_staff') === 'true')
 
@@ -814,7 +830,9 @@ const deleteComment = async () => {
 }
 
 onMounted(() => {
-  fetchUsers()
+  if (isStaff.value) {
+    fetchUsers()
+  }
   fetchTasks()
 })
 </script>

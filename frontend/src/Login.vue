@@ -43,10 +43,12 @@ const login = async () => {
     const token = response.data.token;
     const isStaff = response.data.is_staff;
     const usernameVal = response.data.username;
+    const userIdVal = response.data.user_id;
 
     localStorage.setItem('token', token);
     localStorage.setItem('is_staff', String(isStaff));
     localStorage.setItem('username', usernameVal);
+    localStorage.setItem('user_id', String(userIdVal));
     
     console.log("Giriş başarılı, yönlendiriliyor...");
     

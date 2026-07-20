@@ -38,10 +38,10 @@
       </div>
 
       <!-- Left Links -->
-      <v-btn variant="text" class="text-capitalize text-grey-darken-3 font-weight-medium px-2 mr-2 d-none d-md-flex" size="small">Çalışma Alanları <v-icon size="16">mdi-chevron-down</v-icon></v-btn>
-      <v-btn variant="text" class="text-capitalize text-grey-darken-3 font-weight-medium px-2 mr-2 d-none d-md-flex" size="small">Projeler <v-icon size="16">mdi-chevron-down</v-icon></v-btn>
-      <v-btn variant="text" class="text-capitalize text-grey-darken-3 font-weight-medium px-2 mr-2 d-none d-md-flex" size="small">Filtreler <v-icon size="16">mdi-chevron-down</v-icon></v-btn>
-      <v-btn variant="text" class="text-capitalize text-grey-darken-3 font-weight-medium px-2 mr-6 d-none d-md-flex" size="small">Panolar <v-icon size="16">mdi-chevron-down</v-icon></v-btn>
+      <v-btn variant="text" class="text-capitalize text-grey-darken-3 font-weight-medium px-2 mr-2 d-none d-lg-flex" size="small">Çalışma Alanları <v-icon size="16">mdi-chevron-down</v-icon></v-btn>
+      <v-btn variant="text" class="text-capitalize text-grey-darken-3 font-weight-medium px-2 mr-2 d-none d-lg-flex" size="small">Projeler <v-icon size="16">mdi-chevron-down</v-icon></v-btn>
+      <v-btn variant="text" class="text-capitalize text-grey-darken-3 font-weight-medium px-2 mr-2 d-none d-lg-flex" size="small">Filtreler <v-icon size="16">mdi-chevron-down</v-icon></v-btn>
+      <v-btn variant="text" class="text-capitalize text-grey-darken-3 font-weight-medium px-2 mr-6 d-none d-lg-flex" size="small">Panolar <v-icon size="16">mdi-chevron-down</v-icon></v-btn>
 
       <!-- Create Button -->
       <v-btn color="blue-darken-2" variant="flat" size="small" class="text-capitalize font-weight-bold px-4 mr-4" rounded="sm" @click="triggerGlobalCreate">
@@ -63,7 +63,7 @@
       <v-spacer class="d-lg-none"></v-spacer>
 
       <!-- Ask Rovo Button -->
-      <v-btn variant="outlined" color="blue" size="small" class="text-capitalize font-weight-bold mr-3 d-none d-sm-flex" prepend-icon="mdi-robot-outline" rounded="sm">
+      <v-btn variant="outlined" color="blue" size="small" class="text-capitalize font-weight-bold mr-3 d-none d-lg-flex" prepend-icon="mdi-robot-outline" rounded="sm">
         Ask Rovo
       </v-btn>
 

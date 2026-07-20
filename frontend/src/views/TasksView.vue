@@ -22,6 +22,10 @@
       <v-col cols="12" sm="6" class="text-sm-right d-flex justify-sm-end gap-2 align-center">
         <v-btn icon variant="text" size="small" color="grey-darken-2" title="Paylaş"><v-icon>mdi-share-variant-outline</v-icon></v-btn>
         <v-btn icon variant="text" size="small" color="grey-darken-2" title="Genişlet"><v-icon>mdi-fullscreen</v-icon></v-btn>
+        <!-- Ask Rovo Button -->
+        <v-btn variant="outlined" color="blue" size="small" class="text-capitalize font-weight-bold mr-3 d-none d-lg-flex" prepend-icon="mdi-robot-outline" rounded="sm">
+          Ask Rovo
+        </v-btn>
         <v-btn
           color="success"
           prepend-icon="mdi-microsoft-excel"
@@ -60,110 +64,110 @@
       <span class="tab-item text-body-2 font-weight-medium text-grey-darken-1 pb-2">Issues</span>
     </div>
 
-    <!-- Filtre Araç Çubuğu (Filters Toolbar) -->
-    <v-row class="mb-6 mx-2 align-center">
-      <!-- Arama ve Kullanıcı Avatarları -->
-      <v-col cols="12" md="8" class="d-flex align-center flex-wrap gap-3">
-        <div style="width: 200px;">
-          <v-text-field
-            v-model="searchQuery"
-            placeholder="Panoda ara..."
-            variant="outlined"
-            density="compact"
-            hide-details
-            prepend-inner-icon="mdi-magnify"
-          ></v-text-field>
-        </div>
+    <!-- Filtre Araç Çubuğu (Jira Tarzı Tek Sıra ve Kaydırılabilir) -->
+    <div class="mx-2 mb-6 d-flex align-center overflow-x-auto pb-2 flex-nowrap" style="gap: 12px; scrollbar-width: none; -ms-overflow-style: none;">
+      <!-- Arama Kutusu -->
+      <div style="width: 180px; min-width: 180px;" class="flex-shrink-0">
+        <v-text-field
+          v-model="searchQuery"
+          placeholder="Panoda ara..."
+          variant="outlined"
+          density="compact"
+          hide-details
+          prepend-inner-icon="mdi-magnify"
+        ></v-text-field>
+      </div>
 
-        <!-- Atanan Kullanıcılar Avatar Listesi (Filtreleme için) -->
-        <div class="d-flex align-center mr-2">
-          <v-avatar 
-            v-for="user in usersList.slice(0, 5)" 
-            :key="user.id" 
-            :color="selectedFilterUserId === user.id ? 'blue-darken-2' : 'indigo-lighten-4'" 
-            :class="['cursor-pointer hover-avatar mr-n2 elevation-1', {'active-avatar-filter': selectedFilterUserId === user.id}]" 
-            size="30"
-            @click="toggleUserFilter(user.id)"
-            :title="`${user.username} filtrele`"
-          >
-            <span class="text-caption font-weight-bold">{{ user.username.substring(0,2).toUpperCase() }}</span>
-          </v-avatar>
-          
-          <v-avatar 
-            v-if="selectedFilterUserId !== null" 
-            color="red-lighten-4" 
-            class="cursor-pointer ml-3" 
-            size="26"
-            @click="clearUserFilter"
-            title="Filtreyi Temizle"
-          >
-            <v-icon size="16" color="red">mdi-close</v-icon>
-          </v-avatar>
-        </div>
-
-        <!-- Sürüm ve Epic Filtreleri (Static) -->
-        <v-btn variant="outlined" size="small" class="text-capitalize text-grey-darken-3 font-weight-medium mr-1" color="grey-lighten-1">Version <v-icon size="14" class="ml-1">mdi-chevron-down</v-icon></v-btn>
-        <v-btn variant="outlined" size="small" class="text-capitalize text-grey-darken-3 font-weight-medium mr-1" color="grey-lighten-1">Epic <v-icon size="14" class="ml-1">mdi-chevron-down</v-icon></v-btn>
-
-        <!-- Tip Filtresi (Interactive) -->
-        <v-menu>
-          <template v-slot:activator="{ props }">
-            <v-btn
-              variant="outlined"
-              :color="selectedTypeFilter ? 'blue-darken-2' : 'grey-lighten-1'"
-              size="small"
-              class="text-capitalize text-grey-darken-3 font-weight-medium mr-1"
-              v-bind="props"
-            >
-              Tip: {{ getTypeLabel(selectedTypeFilter) }}
-              <v-icon size="14" class="ml-1">mdi-chevron-down</v-icon>
-            </v-btn>
-          </template>
-          <v-list density="compact">
-            <v-list-item title="Tümü" @click="selectedTypeFilter = ''"></v-list-item>
-            <v-list-item v-for="t in typeOptions" :key="t.value" :title="t.title" @click="selectedTypeFilter = t.value"></v-list-item>
-          </v-list>
-        </v-menu>
-
-        <!-- Öncelik Filtresi (Interactive) -->
-        <v-menu>
-          <template v-slot:activator="{ props }">
-            <v-btn
-              variant="outlined"
-              :color="selectedPriorityFilter ? 'blue-darken-2' : 'grey-lighten-1'"
-              size="small"
-              class="text-capitalize text-grey-darken-3 font-weight-medium mr-1"
-              v-bind="props"
-            >
-              Öncelik: {{ getPriorityLabel(selectedPriorityFilter) }}
-              <v-icon size="14" class="ml-1">mdi-chevron-down</v-icon>
-            </v-btn>
-          </template>
-          <v-list density="compact">
-            <v-list-item title="Tümü" @click="selectedPriorityFilter = ''"></v-list-item>
-            <v-list-item v-for="p in priorityOptions" :key="p.value" :title="p.title" @click="selectedPriorityFilter = p.value"></v-list-item>
-          </v-list>
-        </v-menu>
-
-        <!-- Benim Görevlerim Filtresi -->
-        <v-btn
-          :variant="onlyMyTasksFilter ? 'flat' : 'outlined'"
-          :color="onlyMyTasksFilter ? 'blue-darken-2' : 'grey-lighten-1'"
-          size="small"
-          class="text-capitalize font-weight-bold"
-          @click="onlyMyTasksFilter = !onlyMyTasksFilter"
+      <!-- Atanan Kullanıcılar Avatar Listesi -->
+      <div class="d-flex align-center mr-2 flex-shrink-0">
+        <v-avatar 
+          v-for="user in usersList.slice(0, 5)" 
+          :key="user.id" 
+          :color="selectedFilterUserId === user.id ? 'blue-darken-2' : 'indigo-lighten-4'" 
+          :class="['cursor-pointer hover-avatar mr-n2 elevation-1', {'active-avatar-filter': selectedFilterUserId === user.id}]" 
+          size="30"
+          @click="toggleUserFilter(user.id)"
+          :title="`${user.username} filtrele`"
         >
-          Sadece Benim Görevlerim
-        </v-btn>
-      </v-col>
+          <span class="text-caption font-weight-bold">{{ user.username.substring(0,2).toUpperCase() }}</span>
+        </v-avatar>
+        
+        <v-avatar 
+          v-if="selectedFilterUserId !== null" 
+          color="red-lighten-4" 
+          class="cursor-pointer ml-3" 
+          size="26"
+          @click="clearUserFilter"
+          title="Filtreyi Temizle"
+        >
+          <v-icon size="16" color="red">mdi-close</v-icon>
+        </v-avatar>
+      </div>
 
-      <!-- Sağ Taraf Tasarım Görünümleri -->
-      <v-col cols="12" md="4" class="text-md-right d-flex justify-md-end align-center gap-2">
+      <!-- Sürüm ve Epic Filtreleri (Static) -->
+      <v-btn variant="outlined" size="small" class="text-capitalize text-grey-darken-3 font-weight-medium mr-1 flex-shrink-0" color="grey-lighten-1">Version <v-icon size="14" class="ml-1">mdi-chevron-down</v-icon></v-btn>
+      <v-btn variant="outlined" size="small" class="text-capitalize text-grey-darken-3 font-weight-medium mr-1 flex-shrink-0" color="grey-lighten-1">Epic <v-icon size="14" class="ml-1">mdi-chevron-down</v-icon></v-btn>
+
+      <!-- Tip Filtresi (Interactive) -->
+      <v-menu>
+        <template v-slot:activator="{ props }">
+          <v-btn
+            variant="outlined"
+            :color="selectedTypeFilter ? 'blue-darken-2' : 'grey-lighten-1'"
+            size="small"
+            class="text-capitalize text-grey-darken-3 font-weight-medium mr-1 flex-shrink-0"
+            v-bind="props"
+          >
+            Tip: {{ getTypeLabel(selectedTypeFilter) }}
+            <v-icon size="14" class="ml-1">mdi-chevron-down</v-icon>
+          </v-btn>
+        </template>
+        <v-list density="compact">
+          <v-list-item title="Tümü" @click="selectedTypeFilter = ''"></v-list-item>
+          <v-list-item v-for="t in typeOptions" :key="t.value" :title="t.title" @click="selectedTypeFilter = t.value"></v-list-item>
+        </v-list>
+      </v-menu>
+
+      <!-- Öncelik Filtresi (Interactive) -->
+      <v-menu>
+        <template v-slot:activator="{ props }">
+          <v-btn
+            variant="outlined"
+            :color="selectedPriorityFilter ? 'blue-darken-2' : 'grey-lighten-1'"
+            size="small"
+            class="text-capitalize text-grey-darken-3 font-weight-medium mr-1 flex-shrink-0"
+            v-bind="props"
+          >
+            Öncelik: {{ getPriorityLabel(selectedPriorityFilter) }}
+            <v-icon size="14" class="ml-1">mdi-chevron-down</v-icon>
+          </v-btn>
+        </template>
+        <v-list density="compact">
+          <v-list-item title="Tümü" @click="selectedPriorityFilter = ''"></v-list-item>
+          <v-list-item v-for="p in priorityOptions" :key="p.value" :title="p.title" @click="selectedPriorityFilter = p.value"></v-list-item>
+        </v-list>
+      </v-menu>
+
+      <!-- Benim Görevlerim Filtresi -->
+      <v-btn
+        :variant="onlyMyTasksFilter ? 'flat' : 'outlined'"
+        :color="onlyMyTasksFilter ? 'blue-darken-2' : 'grey-lighten-1'"
+        size="small"
+        class="text-capitalize font-weight-bold flex-shrink-0"
+        @click="onlyMyTasksFilter = !onlyMyTasksFilter"
+      >
+        Sadece Benim Görevlerim
+      </v-btn>
+
+      <v-spacer></v-spacer>
+
+      <!-- Tasarım Görünümleri -->
+      <div class="d-flex align-center gap-1 flex-shrink-0">
         <v-btn icon variant="text" size="small" color="grey-darken-2"><v-icon>mdi-chart-bar</v-icon></v-btn>
         <v-btn icon variant="text" size="small" color="grey-darken-2"><v-icon>mdi-tune-variant</v-icon></v-btn>
         <v-btn icon variant="text" size="small" color="grey-darken-2"><v-icon>mdi-dots-horizontal</v-icon></v-btn>
-      </v-col>
-    </v-row>
+      </div>
+    </div>
 
     <!-- KANBAN PANOSU -->
     <v-row class="px-2 flex-nowrap" style="overflow-x: auto; min-height: 80vh; padding-bottom: 24px;">

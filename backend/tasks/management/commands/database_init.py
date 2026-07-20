@@ -80,7 +80,11 @@ class Command(BaseCommand):
                 'definition': "PostgreSQL veritabanı kurulumu ve Django ayarlarının yapılması.",
                 'creator': admin_user,
                 'assignee': user1,
-                'state': 'to do'
+                'state': 'to do',
+                'priority': 'medium',
+                'task_type': 'task',
+                'duration': 12,
+                'due_date': '2026-08-01'
             }
         )
         if created:
@@ -93,7 +97,11 @@ class Command(BaseCommand):
                 'definition': "Kullanıcı CRUD ve Görev yönetim API'lerinin REST standartlarına göre hazırlanması.",
                 'creator': admin_user,
                 'assignee': user1,
-                'state': 'in progress'
+                'state': 'in progress',
+                'priority': 'high',
+                'task_type': 'task',
+                'duration': 8,
+                'due_date': '2026-07-25'
             }
         )
         if created:
@@ -119,7 +127,11 @@ class Command(BaseCommand):
                 'definition': "Vuetify bileşenlerinin entegre edilmesi ve responsive side menu tasarımının tamamlanması.",
                 'creator': admin_user,
                 'assignee': user2,
-                'state': 'done'
+                'state': 'done',
+                'priority': 'low',
+                'task_type': 'story',
+                'duration': 24,
+                'due_date': '2026-07-15'
             }
         )
         if created:
@@ -132,7 +144,11 @@ class Command(BaseCommand):
                 'definition': "Yazılan yeni API endpoint'lerinin ve serializer validasyon kurallarının PR üzerinden incelenmesi.",
                 'creator': admin_user,
                 'assignee': user1,
-                'state': 'in code review'
+                'state': 'in code review',
+                'priority': 'medium',
+                'task_type': 'task',
+                'duration': 4,
+                'due_date': '2026-07-28'
             }
         )
         if created:
@@ -145,7 +161,11 @@ class Command(BaseCommand):
                 'definition': "Lokal Docker ortamında Nginx port çakışması nedeniyle geliştirme engellendi.",
                 'creator': user1,
                 'assignee': user1,
-                'state': 'blocked dev'
+                'state': 'blocked dev',
+                'priority': 'critical',
+                'task_type': 'bug',
+                'duration': 16,
+                'due_date': '2026-07-22'
             }
         )
         if created:
@@ -158,7 +178,11 @@ class Command(BaseCommand):
                 'definition': "Yeni eklenen profil güncelleme ve Base64 resim yükleme fonksiyonlarının test senaryolarının yazılması.",
                 'creator': admin_user,
                 'assignee': user2,
-                'state': 'ready for test'
+                'state': 'ready for test',
+                'priority': 'high',
+                'task_type': 'story',
+                'duration': 18,
+                'due_date': '2026-07-30'
             }
         )
         if created:
@@ -171,7 +195,11 @@ class Command(BaseCommand):
                 'definition': "Frontend ve Backend arasındaki API haberleşmesinin uçtan uca (E2E) test edilmesi.",
                 'creator': admin_user,
                 'assignee': user2,
-                'state': 'in test'
+                'state': 'in test',
+                'priority': 'medium',
+                'task_type': 'task',
+                'duration': 6,
+                'due_date': '2026-07-27'
             }
         )
         if created:
@@ -184,7 +212,11 @@ class Command(BaseCommand):
                 'definition': "Test ortamında mobil cihazlara anlık bildirimlerin ulaşmaması hatası araştırılıyor.",
                 'creator': user2,
                 'assignee': user2,
-                'state': 'blocked test'
+                'state': 'blocked test',
+                'priority': 'critical',
+                'task_type': 'bug',
+                'duration': 20,
+                'due_date': '2026-07-23'
             }
         )
         if created:

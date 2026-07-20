@@ -101,12 +101,60 @@
           </v-avatar>
         </div>
 
-        <!-- Filtre Açılır Kutuları (Mockup Görseli) -->
+        <!-- Sürüm ve Epic Filtreleri (Static) -->
         <v-btn variant="outlined" size="small" class="text-capitalize text-grey-darken-3 font-weight-medium mr-1" color="grey-lighten-1">Version <v-icon size="14" class="ml-1">mdi-chevron-down</v-icon></v-btn>
         <v-btn variant="outlined" size="small" class="text-capitalize text-grey-darken-3 font-weight-medium mr-1" color="grey-lighten-1">Epic <v-icon size="14" class="ml-1">mdi-chevron-down</v-icon></v-btn>
-        <v-btn variant="outlined" size="small" class="text-capitalize text-grey-darken-3 font-weight-medium mr-1" color="grey-lighten-1">Type <v-icon size="14" class="ml-1">mdi-chevron-down</v-icon></v-btn>
-        <v-btn variant="outlined" size="small" class="text-capitalize text-grey-darken-3 font-weight-medium mr-1" color="grey-lighten-1">Label <v-icon size="14" class="ml-1">mdi-chevron-down</v-icon></v-btn>
-        <v-btn variant="outlined" size="small" class="text-capitalize text-grey-darken-3 font-weight-medium" color="grey-lighten-1">Quick filters <v-icon size="14" class="ml-1">mdi-chevron-down</v-icon></v-btn>
+
+        <!-- Tip Filtresi (Interactive) -->
+        <v-menu>
+          <template v-slot:activator="{ props }">
+            <v-btn
+              variant="outlined"
+              :color="selectedTypeFilter ? 'blue-darken-2' : 'grey-lighten-1'"
+              size="small"
+              class="text-capitalize text-grey-darken-3 font-weight-medium mr-1"
+              v-bind="props"
+            >
+              Tip: {{ getTypeLabel(selectedTypeFilter) }}
+              <v-icon size="14" class="ml-1">mdi-chevron-down</v-icon>
+            </v-btn>
+          </template>
+          <v-list density="compact">
+            <v-list-item title="Tümü" @click="selectedTypeFilter = ''"></v-list-item>
+            <v-list-item v-for="t in typeOptions" :key="t.value" :title="t.title" @click="selectedTypeFilter = t.value"></v-list-item>
+          </v-list>
+        </v-menu>
+
+        <!-- Öncelik Filtresi (Interactive) -->
+        <v-menu>
+          <template v-slot:activator="{ props }">
+            <v-btn
+              variant="outlined"
+              :color="selectedPriorityFilter ? 'blue-darken-2' : 'grey-lighten-1'"
+              size="small"
+              class="text-capitalize text-grey-darken-3 font-weight-medium mr-1"
+              v-bind="props"
+            >
+              Öncelik: {{ getPriorityLabel(selectedPriorityFilter) }}
+              <v-icon size="14" class="ml-1">mdi-chevron-down</v-icon>
+            </v-btn>
+          </template>
+          <v-list density="compact">
+            <v-list-item title="Tümü" @click="selectedPriorityFilter = ''"></v-list-item>
+            <v-list-item v-for="p in priorityOptions" :key="p.value" :title="p.title" @click="selectedPriorityFilter = p.value"></v-list-item>
+          </v-list>
+        </v-menu>
+
+        <!-- Benim Görevlerim Filtresi -->
+        <v-btn
+          :variant="onlyMyTasksFilter ? 'flat' : 'outlined'"
+          :color="onlyMyTasksFilter ? 'blue-darken-2' : 'grey-lighten-1'"
+          size="small"
+          class="text-capitalize font-weight-bold"
+          @click="onlyMyTasksFilter = !onlyMyTasksFilter"
+        >
+          Sadece Benim Görevlerim
+        </v-btn>
       </v-col>
 
       <!-- Sağ Taraf Tasarım Görünümleri -->
@@ -164,7 +212,11 @@
               >
                 <v-card-text class="pa-4">
                   <div class="d-flex justify-space-between align-center mb-2">
-                    <span class="text-caption font-weight-bold text-indigo-darken-1">TASK-{{ task.id }}</span>
+                    <div class="d-flex align-center gap-1">
+                      <v-icon :icon="getTypeIcon(task.task_type)" :color="getTypeColor(task.task_type)" size="18" :title="getTypeLabel(task.task_type)"></v-icon>
+                      <v-icon :icon="getPriorityIcon(task.priority)" :color="getPriorityColor(task.priority)" size="18" :title="getPriorityLabel(task.priority)"></v-icon>
+                      <span class="text-caption font-weight-bold text-indigo-darken-1">TASK-{{ task.id }}</span>
+                    </div>
                     <v-chip :color="col.color" size="x-small" variant="tonal" class="font-weight-bold text-uppercase">
                       {{ col.title }}
                     </v-chip>
@@ -172,13 +224,22 @@
                   <h3 class="text-subtitle-1 font-weight-bold mb-2 text-indigo-darken-4 text-truncate">{{ task.title }}</h3>
                   <p class="text-body-2 text-grey-darken-1 text-truncate mb-3">{{ task.definition }}</p>
                   
-                  <div class="d-flex align-center justify-space-between mt-2 pt-2 border-top">
+                  <div class="d-flex align-center justify-space-between mt-2 pt-2 border-top flex-wrap gap-2">
                     <span class="text-caption text-grey-darken-1">
                       Atanan: <strong>{{ task.assignee_username }}</strong>
                     </span>
-                    <v-avatar color="indigo-lighten-4" size="24" class="text-caption font-weight-bold">
-                      {{ (task.assignee_username || '').substring(0,2).toUpperCase() }}
-                    </v-avatar>
+                    <div class="d-flex align-center gap-1">
+                      <v-chip v-if="task.duration" size="x-small" color="blue-grey" variant="flat" class="font-weight-bold">
+                        {{ task.duration }}s
+                      </v-chip>
+                      <v-chip v-if="task.due_date" size="x-small" :color="isOverdue(task.due_date) && task.state !== 'done' ? 'red' : 'grey'" variant="outlined" class="font-weight-bold">
+                        <v-icon size="10" class="mr-1">mdi-calendar</v-icon>
+                        {{ formatShortDate(task.due_date) }}
+                      </v-chip>
+                      <v-avatar color="indigo-lighten-4" size="24" class="text-caption font-weight-bold">
+                        {{ (task.assignee_username || '').substring(0,2).toUpperCase() }}
+                      </v-avatar>
+                    </div>
                   </div>
                 </v-card-text>
               </v-card>
@@ -288,6 +349,58 @@
               variant="outlined"
               density="comfortable"
               disabled
+            ></v-text-field>
+          </v-col>
+
+          <!-- Görev Tipi -->
+          <v-col cols="12" sm="6">
+            <v-select
+              v-model="selectedTask.task_type"
+              :items="typeOptions"
+              item-title="title"
+              item-value="value"
+              label="Görev Tipi"
+              variant="outlined"
+              density="comfortable"
+              @update:model-value="changeTaskType"
+            ></v-select>
+          </v-col>
+
+          <!-- Öncelik -->
+          <v-col cols="12" sm="6">
+            <v-select
+              v-model="selectedTask.priority"
+              :items="priorityOptions"
+              item-title="title"
+              item-value="value"
+              label="Öncelik"
+              variant="outlined"
+              density="comfortable"
+              @update:model-value="changeTaskPriority"
+            ></v-select>
+          </v-col>
+
+          <!-- Tahmini Süre -->
+          <v-col cols="12" sm="6">
+            <v-text-field
+              v-model.number="selectedTask.duration"
+              type="number"
+              label="Tahmini Süre (Saat)"
+              variant="outlined"
+              density="comfortable"
+              @change="changeTaskDuration(selectedTask.duration)"
+            ></v-text-field>
+          </v-col>
+
+          <!-- Teslim Tarihi -->
+          <v-col cols="12" sm="6">
+            <v-text-field
+              v-model="selectedTask.due_date"
+              type="date"
+              label="Teslim Tarihi"
+              variant="outlined"
+              density="comfortable"
+              @change="changeTaskDueDate(selectedTask.due_date)"
             ></v-text-field>
           </v-col>
 
@@ -416,6 +529,57 @@
             ></v-textarea>
 
             <v-row>
+              <!-- Görev Tipi -->
+              <v-col cols="12" sm="6">
+                <v-select
+                  v-model="addForm.task_type"
+                  :items="typeOptions"
+                  item-title="title"
+                  item-value="value"
+                  label="Görev Tipi *"
+                  variant="outlined"
+                  density="comfortable"
+                  required
+                ></v-select>
+              </v-col>
+
+              <!-- Öncelik -->
+              <v-col cols="12" sm="6">
+                <v-select
+                  v-model="addForm.priority"
+                  :items="priorityOptions"
+                  item-title="title"
+                  item-value="value"
+                  label="Öncelik *"
+                  variant="outlined"
+                  density="comfortable"
+                  required
+                ></v-select>
+              </v-col>
+
+              <!-- Tahmini Süre -->
+              <v-col cols="12" sm="6">
+                <v-text-field
+                  v-model.number="addForm.duration"
+                  type="number"
+                  label="Tahmini Süre (Saat)"
+                  variant="outlined"
+                  density="comfortable"
+                  min="0"
+                ></v-text-field>
+              </v-col>
+
+              <!-- Teslim Tarihi -->
+              <v-col cols="12" sm="6">
+                <v-text-field
+                  v-model="addForm.due_date"
+                  type="date"
+                  label="Teslim Tarihi (Due Date)"
+                  variant="outlined"
+                  density="comfortable"
+                ></v-text-field>
+              </v-col>
+
               <!-- Durum (State) Seçimi -->
               <v-col cols="12" sm="6">
                 <v-select
@@ -576,6 +740,23 @@ const columns = [
 
 const searchQuery = ref('')
 const selectedFilterUserId = ref(null)
+const selectedPriorityFilter = ref('')
+const selectedTypeFilter = ref('')
+const onlyMyTasksFilter = ref(false)
+
+const typeOptions = [
+  { value: 'task', title: 'Görev' },
+  { value: 'bug', title: 'Hata' },
+  { value: 'story', title: 'Hikaye' },
+  { value: 'epic', title: 'Epic' }
+]
+
+const priorityOptions = [
+  { value: 'low', title: 'Düşük' },
+  { value: 'medium', title: 'Orta' },
+  { value: 'high', title: 'Yüksek' },
+  { value: 'critical', title: 'Acil' }
+]
 
 const toggleUserFilter = (userId) => {
   if (selectedFilterUserId.value === userId) {
@@ -587,6 +768,57 @@ const toggleUserFilter = (userId) => {
 
 const clearUserFilter = () => {
   selectedFilterUserId.value = null
+}
+
+const getTypeIcon = (type) => {
+  if (type === 'bug') return 'mdi-bug'
+  if (type === 'story') return 'mdi-bookmark'
+  if (type === 'epic') return 'mdi-flash'
+  return 'mdi-checkbox-marked-circle-outline'
+}
+
+const getTypeColor = (type) => {
+  if (type === 'bug') return 'red'
+  if (type === 'story') return 'green'
+  if (type === 'epic') return 'purple'
+  return 'blue'
+}
+
+const getTypeLabel = (type) => {
+  if (!type) return 'Tümü'
+  const found = typeOptions.find(t => t.value === type)
+  return found ? found.title : type
+}
+
+const getPriorityIcon = (priority) => {
+  if (priority === 'critical') return 'mdi-arrow-up-bold-circle'
+  if (priority === 'high') return 'mdi-arrow-up-bold'
+  if (priority === 'medium') return 'mdi-arrow-right-bold'
+  return 'mdi-arrow-down-bold'
+}
+
+const getPriorityColor = (priority) => {
+  if (priority === 'critical') return 'red'
+  if (priority === 'high') return 'orange'
+  if (priority === 'medium') return 'blue'
+  return 'grey'
+}
+
+const getPriorityLabel = (priority) => {
+  if (!priority) return 'Tümü'
+  const found = priorityOptions.find(p => p.value === priority)
+  return found ? found.title : priority
+}
+
+const isOverdue = (dateStr) => {
+  if (!dateStr) return false
+  return new Date(dateStr) < new Date()
+}
+
+const formatShortDate = (dateStr) => {
+  if (!dateStr) return ''
+  const date = new Date(dateStr)
+  return date.toLocaleDateString('tr-TR', { month: 'short', day: 'numeric' })
 }
 
 const getTasksByState = (stateKey) => {
@@ -603,6 +835,18 @@ const getTasksByState = (stateKey) => {
 
   if (selectedFilterUserId.value !== null) {
     filtered = filtered.filter(t => t.assignee === selectedFilterUserId.value)
+  }
+
+  if (onlyMyTasksFilter.value) {
+    filtered = filtered.filter(t => t.assignee === currentUserId.value)
+  }
+
+  if (selectedTypeFilter.value) {
+    filtered = filtered.filter(t => t.task_type === selectedTypeFilter.value)
+  }
+
+  if (selectedPriorityFilter.value) {
+    filtered = filtered.filter(t => t.priority === selectedPriorityFilter.value)
   }
 
   return filtered
@@ -811,6 +1055,63 @@ const changeTaskAssignee = async (newAssigneeId) => {
   } catch (error) {
     console.error("Atanan kişi güncellenemedi:", error)
     alert("Atanan kişi güncellenirken hata oluştu.")
+  }
+}
+
+const changeTaskPriority = async (val) => {
+  if (!selectedTask.value) return
+  try {
+    const id = selectedTask.value.id
+    await api.patch(`tasks/${id}/`, { priority: val })
+    const index = tasks.value.findIndex(t => t.id === id)
+    if (index !== -1) {
+      tasks.value[index].priority = val
+    }
+  } catch (error) {
+    console.error("Öncelik güncellenemedi:", error)
+  }
+}
+
+const changeTaskType = async (val) => {
+  if (!selectedTask.value) return
+  try {
+    const id = selectedTask.value.id
+    await api.patch(`tasks/${id}/`, { task_type: val })
+    const index = tasks.value.findIndex(t => t.id === id)
+    if (index !== -1) {
+      tasks.value[index].task_type = val
+    }
+  } catch (error) {
+    console.error("Görev tipi güncellenemedi:", error)
+  }
+}
+
+const changeTaskDuration = async (val) => {
+  if (!selectedTask.value) return
+  const numVal = parseInt(val) || 0
+  try {
+    const id = selectedTask.value.id
+    await api.patch(`tasks/${id}/`, { duration: numVal })
+    const index = tasks.value.findIndex(t => t.id === id)
+    if (index !== -1) {
+      tasks.value[index].duration = numVal
+    }
+  } catch (error) {
+    console.error("Süre güncellenemedi:", error)
+  }
+}
+
+const changeTaskDueDate = async (val) => {
+  if (!selectedTask.value) return
+  try {
+    const id = selectedTask.value.id
+    await api.patch(`tasks/${id}/`, { due_date: val || null })
+    const index = tasks.value.findIndex(t => t.id === id)
+    if (index !== -1) {
+      tasks.value[index].due_date = val || null
+    }
+  } catch (error) {
+    console.error("Teslim tarihi güncellenemedi:", error)
   }
 }
 

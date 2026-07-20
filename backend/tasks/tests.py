@@ -161,3 +161,23 @@ class TaskCollaborationAppTests(APITestCase):
         self.assertEqual(new_user.last_name, "TestSoyad")
         self.assertEqual(new_user.profile.department, "Tasarım")
         self.assertEqual(new_user.profile.position, "Lead Designer")
+
+    def test_task_detailed_fields(self):
+        """Görev oluştururken veya güncellerken detaylı alanların (öncelik, tip, süre, teslim tarihi) doğrulandığını doğrula."""
+        self.client.force_authenticate(user=self.admin_user)
+        data = {
+            "title": "Detailed Task",
+            "definition": "Creating a very detailed task",
+            "assignee": self.user1.id,
+            "state": "to do",
+            "priority": "critical",
+            "task_type": "bug",
+            "duration": 40,
+            "due_date": "2026-12-31"
+        }
+        response = self.client.post("/api/tasks/", data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['priority'], 'critical')
+        self.assertEqual(response.data['task_type'], 'bug')
+        self.assertEqual(response.data['duration'], 40)
+        self.assertEqual(response.data['due_date'], '2026-12-31')

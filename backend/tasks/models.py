@@ -27,6 +27,24 @@ class Task(models.Model):
     assignee = models.ForeignKey(User, on_delete=models.CASCADE, related_name='assigned_tasks')
     state = models.CharField(max_length=30, choices=STATE_CHOICES, default='to do')
 
+    PRIORITY_CHOICES = [
+        ('low', 'Düşük'),
+        ('medium', 'Orta'),
+        ('high', 'Yüksek'),
+        ('critical', 'Acil')
+    ]
+    TYPE_CHOICES = [
+        ('task', 'Görev'),
+        ('bug', 'Hata'),
+        ('story', 'Hikaye'),
+        ('epic', 'Epic')
+    ]
+    
+    priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium')
+    task_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='task')
+    duration = models.PositiveIntegerField(default=0, help_text="Tahmini süre (saat)")
+    due_date = models.DateField(null=True, blank=True)
+
     def __str__(self):
         return self.title
 

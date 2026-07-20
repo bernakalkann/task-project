@@ -181,3 +181,56 @@ class TaskCollaborationAppTests(APITestCase):
         self.assertEqual(response.data['task_type'], 'bug')
         self.assertEqual(response.data['duration'], 40)
         self.assertEqual(response.data['due_date'], '2026-12-31')
+
+    def test_attachment_upload_and_retrieval(self):
+        """Görev ve yorumlar için dosya ekleme (attachment) API'sinin çalıştığını doğrula."""
+        self.client.force_authenticate(user=self.admin_user)
+        # 1. Görev oluştur
+        task_data = {
+            "title": "Task with Attachment",
+            "definition": "A task that will have an attachment",
+            "assignee": self.user1.id,
+            "state": "to do"
+        }
+        task_response = self.client.post("/api/tasks/", task_data)
+        task_id = task_response.data['id']
+
+        # 2. Göreve dosya ekle
+        attachment_data = {
+            "task": task_id,
+            "name": "test_document.pdf",
+            "file_data": "data:application/pdf;base64,dGVzdF9jb250ZW50",
+            "file_type": "application/pdf"
+        }
+        attach_response = self.client.post("/api/attachments/", attachment_data, format='json')
+        self.assertEqual(attach_response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(attach_response.data['name'], 'test_document.pdf')
+        self.assertEqual(attach_response.data['file_type'], 'application/pdf')
+
+        # 3. Görev detayını çekerek ekin geldiğini doğrula
+        task_detail_res = self.client.get(f"/api/tasks/{task_id}/")
+        self.assertEqual(len(task_detail_res.data['attachments']), 1)
+        self.assertEqual(task_detail_res.data['attachments'][0]['name'], 'test_document.pdf')
+
+    def test_subtask_creation_and_retrieval(self):
+        """Alt görev oluşturulabildiğini ve üst görev çekildiğinde alt görevlerin listelendiğini doğrula."""
+        self.client.force_authenticate(user=self.admin_user)
+        
+        # 2. Alt görev oluştur
+        subtask_data = {
+            "title": "Subtask 1",
+            "definition": "Subtask of task1",
+            "parent": self.task1.id,
+            "assignee": self.user1.id,
+            "state": "to do"
+        }
+        response = self.client.post("/api/tasks/", subtask_data)
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(response.data['parent'], self.task1.id)
+        
+        # 3. Ana görevi getiren detay endpoint'ini çağır
+        detail_res = self.client.get(f"/api/tasks/{self.task1.id}/")
+        self.assertEqual(detail_res.status_code, status.HTTP_200_OK)
+        self.assertIn('subtasks', detail_res.data)
+        self.assertEqual(len(detail_res.data['subtasks']), 1)
+        self.assertEqual(detail_res.data['subtasks'][0]['title'], "Subtask 1")

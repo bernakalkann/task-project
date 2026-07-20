@@ -362,6 +362,7 @@ const saveProfile = async () => {
     profile.value = response.data
     isEditing.value = false
     successMsg.value = "Profiliniz başarıyla güncellendi!"
+    window.dispatchEvent(new CustomEvent('profile-updated'))
   } catch (error) {
     console.error("Profil kaydedilirken hata oluştu:", error)
     if (error.response && error.response.data) {

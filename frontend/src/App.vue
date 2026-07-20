@@ -1,9 +1,8 @@
 <template>
   <v-app :theme="currentTheme">
-    <!-- Nav Drawer -->
     <v-navigation-drawer
       v-if="isLoggedIn"
-      v-model="drawer"
+      permanent
       app
       color="indigo-darken-4"
       theme="dark"
@@ -62,10 +61,7 @@
 
       <v-spacer class="d-lg-none"></v-spacer>
 
-      <!-- Ask Rovo Button -->
-      <v-btn variant="outlined" color="blue" size="small" class="text-capitalize font-weight-bold mr-3 d-none d-lg-flex" prepend-icon="mdi-robot-outline" rounded="sm">
-        Ask Rovo
-      </v-btn>
+
 
       <!-- Notification Badge & Menu -->
       <v-menu location="bottom end" :close-on-content-click="false">
@@ -118,13 +114,10 @@
 
       <!-- User Avatar / Initials -->
       <v-avatar color="indigo-darken-2" size="32" class="cursor-pointer font-weight-bold elevation-1 mr-2" @click="router.push('/profile')">
-        {{ username.substring(0, 2).toUpperCase() }}
+        <v-img v-if="userAvatar" :src="userAvatar"></v-img>
+        <span v-else>{{ username.substring(0, 2).toUpperCase() }}</span>
       </v-avatar>
 
-      <!-- Sol Çekmeceyi Açıp Kapatma Butonu (Aesthetics) -->
-      <v-btn icon variant="text" color="grey-darken-2" @click="drawer = !drawer">
-        <v-icon size="22">mdi-menu</v-icon>
-      </v-btn>
     </v-app-bar>
 
     <v-main>
@@ -134,7 +127,7 @@
 </template>
 
 <script setup>
-import { ref, watch, onMounted, computed } from 'vue'
+import { ref, watch, onMounted, onUnmounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTheme } from 'vuetify'
 import api from './api'
@@ -152,6 +145,8 @@ const notifications = ref([])
 const unreadCount = computed(() => notifications.value.filter(n => !n.is_read).length)
 const currentTheme = computed(() => theme.global.name.value)
 
+const userAvatar = ref('')
+
 // Bildirimleri getir
 const fetchNotifications = async () => {
   if (!isLoggedIn.value) return
@@ -160,6 +155,17 @@ const fetchNotifications = async () => {
     notifications.value = response.data
   } catch (e) {
     console.error("Bildirimler yüklenemedi", e)
+  }
+}
+
+// Profil bilgilerini getir
+const fetchUserProfile = async () => {
+  if (!isLoggedIn.value) return
+  try {
+    const response = await api.get('profile/')
+    userAvatar.value = response.data.avatar || ''
+  } catch (e) {
+    console.error("Profil yüklenemedi", e)
   }
 }
 
@@ -177,7 +183,12 @@ const updateLoginStatus = () => {
   isLoggedIn.value = !!localStorage.getItem('token')
   isStaff.value = localStorage.getItem('is_staff') === 'true'
   username.value = localStorage.getItem('username') || ''
-  if (isLoggedIn.value) fetchNotifications()
+  if (isLoggedIn.value) {
+    fetchNotifications()
+    fetchUserProfile()
+  } else {
+    userAvatar.value = ''
+  }
 }
 
 const toggleTheme = () => {
@@ -193,6 +204,13 @@ onMounted(() => {
   
   // Bildirimleri her 60 saniyede bir otomatik tazele (Canlılık katar)
   setInterval(fetchNotifications, 60000)
+
+  // Profil resmi güncelleme olayını dinle
+  window.addEventListener('profile-updated', fetchUserProfile)
+})
+
+onUnmounted(() => {
+  window.removeEventListener('profile-updated', fetchUserProfile)
 })
 
 watch(() => route.path, () => updateLoginStatus())

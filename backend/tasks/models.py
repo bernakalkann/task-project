@@ -26,6 +26,7 @@ class Task(models.Model):
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_tasks')
     assignee = models.ForeignKey(User, on_delete=models.CASCADE, related_name='assigned_tasks')
     state = models.CharField(max_length=30, choices=STATE_CHOICES, default='to do')
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='subtasks')
 
     PRIORITY_CHOICES = [
         ('low', 'Düşük'),
@@ -88,3 +89,14 @@ class UserProfile(models.Model):
 
     def __str__(self):
         return f"{self.user.username} Profili"
+
+class Attachment(models.Model):
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, related_name='attachments', null=True, blank=True)
+    comment = models.ForeignKey(Comment, on_delete=models.CASCADE, related_name='attachments', null=True, blank=True)
+    name = models.CharField(max_length=255)
+    file_data = models.TextField() # Base64 representation
+    file_type = models.CharField(max_length=100, blank=True, default='')
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.file_type})"

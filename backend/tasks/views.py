@@ -3,8 +3,8 @@ from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.authtoken.models import Token
-from .models import User, Task, Comment, Notification, UserProfile
-from .serializers import UserSerializer, TaskSerializer, CommentSerializer, NotificationSerializer, UserProfileSerializer
+from .models import User, Task, Comment, Notification, UserProfile, Attachment
+from .serializers import UserSerializer, TaskSerializer, CommentSerializer, NotificationSerializer, UserProfileSerializer, AttachmentSerializer
 from .permissions import IsCommentOwnerOrAdmin
 
 # Sadece adminlerin kullanıcı yönetimi yapabilmesi için özel izin sınıfı
@@ -144,3 +144,8 @@ class ProfileView(APIView):
 
     def put(self, request):
         return self.patch(request)
+
+class AttachmentViewSet(viewsets.ModelViewSet):
+    queryset = Attachment.objects.all()
+    serializer_class = AttachmentSerializer
+    permission_classes = [permissions.IsAuthenticated]

@@ -22,10 +22,7 @@
       <v-col cols="12" sm="6" class="text-sm-right d-flex justify-sm-end gap-2 align-center">
         <v-btn icon variant="text" size="small" color="grey-darken-2" title="Paylaş"><v-icon>mdi-share-variant-outline</v-icon></v-btn>
         <v-btn icon variant="text" size="small" color="grey-darken-2" title="Genişlet"><v-icon>mdi-fullscreen</v-icon></v-btn>
-        <!-- Ask Rovo Button -->
-        <v-btn variant="outlined" color="blue" size="small" class="text-capitalize font-weight-bold mr-3 d-none d-lg-flex" prepend-icon="mdi-robot-outline" rounded="sm">
-          Ask Rovo
-        </v-btn>
+
         <v-btn
           color="success"
           prepend-icon="mdi-microsoft-excel"
@@ -87,7 +84,8 @@
           @click="toggleUserFilter(user.id)"
           :title="`${user.username} filtrele`"
         >
-          <span class="text-caption font-weight-bold">{{ user.username.substring(0,2).toUpperCase() }}</span>
+          <v-img v-if="user.avatar" :src="user.avatar"></v-img>
+          <span v-else class="text-caption font-weight-bold">{{ user.username.substring(0,2).toUpperCase() }}</span>
         </v-avatar>
         
         <v-avatar 
@@ -277,7 +275,8 @@
                         {{ formatShortDate(task.due_date) }}
                       </v-chip>
                       <v-avatar color="indigo-lighten-4" size="24" class="text-caption font-weight-bold">
-                        {{ (task.assignee_username || '').substring(0,2).toUpperCase() }}
+                        <v-img v-if="task.assignee_avatar" :src="task.assignee_avatar"></v-img>
+                        <span v-else>{{ (task.assignee_username || '').substring(0,2).toUpperCase() }}</span>
                       </v-avatar>
                     </div>
                   </div>
@@ -321,7 +320,8 @@
                   {{ task.state.toUpperCase() }}
                 </v-chip>
                 <v-avatar color="indigo-lighten-4" size="26" class="text-caption font-weight-bold">
-                  {{ (task.assignee_username || 'US').substring(0,2).toUpperCase() }}
+                  <v-img v-if="task.assignee_avatar" :src="task.assignee_avatar"></v-img>
+                  <span v-else>{{ (task.assignee_username || 'US').substring(0,2).toUpperCase() }}</span>
                 </v-avatar>
               </div>
             </template>
@@ -426,7 +426,15 @@
               <td>
                 <v-chip size="x-small" color="blue" variant="flat" class="font-weight-bold">{{ task.state.toUpperCase() }}</v-chip>
               </td>
-              <td class="font-weight-bold text-grey-darken-2">{{ task.assignee_username }}</td>
+              <td>
+                <div class="d-flex align-center gap-2">
+                  <v-avatar color="indigo-lighten-4" size="24" class="text-caption font-weight-bold flex-shrink-0">
+                    <v-img v-if="task.assignee_avatar" :src="task.assignee_avatar"></v-img>
+                    <span v-else>{{ (task.assignee_username || '').substring(0,2).toUpperCase() }}</span>
+                  </v-avatar>
+                  <span class="font-weight-bold text-grey-darken-2">{{ task.assignee_username }}</span>
+                </div>
+              </td>
             </tr>
           </tbody>
         </v-table>
@@ -442,275 +450,526 @@
       </v-card>
     </div>
 
-    <!-- DETAY YAN PANELİ (RIGHT DRAWER) -->
+    <!-- DETAY YAN PANELİ (RIGHT DRAWER - JIRA CLOUD STYLE 2-COLUMN MODAL) -->
     <v-navigation-drawer
       v-model="drawer"
       location="right"
       temporary
-      width="600"
+      width="950"
       class="task-detail-drawer"
     >
-      <v-container v-if="selectedTask" class="py-6 px-6">
-        <!-- Başlık -->
-        <div class="d-flex justify-space-between align-center mb-4">
-          <span class="text-h6 font-weight-bold text-indigo-darken-3">TASK-{{ selectedTask.id }}</span>
-          <div class="d-flex gap-2">
-            <!-- Düzenleme Butonu -->
-            <v-btn
-              icon="mdi-pencil"
-              variant="text"
-              color="indigo"
-              size="small"
-              @click="toggleEditTask"
-              :title="isEditingTask ? 'Değişiklikleri İptal Et' : 'Görevi Düzenle'"
-            ></v-btn>
-            <!-- Silme Butonu -->
-            <v-btn
-              icon="mdi-delete"
-              variant="text"
-              color="red"
-              size="small"
-              @click="confirmDeleteTask"
-              title="Görevi Sil"
-            ></v-btn>
-            <v-btn icon="mdi-close" variant="text" size="small" @click="drawer = false"></v-btn>
+      <v-container v-if="selectedTask" class="py-4 px-6">
+        <!-- Path & Breadcrumbs Bar -->
+        <div class="d-flex justify-space-between align-center mb-4 border-bottom pb-2">
+          <div class="d-flex align-center gap-1 text-caption text-grey-darken-1">
+            <v-icon size="14">mdi-plus</v-icon>
+            <span>Add parent</span>
+            <span class="mx-1">/</span>
+            <v-icon size="14" color="blue">mdi-jira</v-icon>
+            <span class="font-weight-bold">GoJira</span>
+            <span class="mx-1">/</span>
+            <v-icon size="14" color="green">mdi-checkbox-marked-circle-outline</v-icon>
+            <span class="font-weight-bold text-grey-darken-3">TASK-{{ selectedTask.id }}</span>
           </div>
-        </div>
-
-        <v-divider class="mb-4"></v-divider>
-
-        <!-- BAŞLIK & AÇIKLAMA GÖSTERİM VEYA EDİTLEME -->
-        <v-form v-if="isEditingTask" ref="editTaskFormRef" class="mb-4">
-          <v-text-field
-            v-model="editTaskForm.title"
-            label="Görev Başlığı"
-            variant="outlined"
-            density="comfortable"
-            class="mb-2"
-          ></v-text-field>
-          <v-textarea
-            v-model="editTaskForm.definition"
-            label="Açıklama"
-            variant="outlined"
-            density="comfortable"
-            rows="3"
-            class="mb-2"
-          ></v-textarea>
-          <v-btn color="indigo" variant="flat" size="small" class="mr-2" @click="saveTaskDetails">Detayları Kaydet</v-btn>
-          <v-btn color="grey" variant="text" size="small" @click="isEditingTask = false">İptal</v-btn>
-        </v-form>
-
-        <div v-else class="mb-6">
-          <h2 class="text-h5 font-weight-bold mb-3 text-indigo-darken-4">{{ selectedTask.title }}</h2>
-          <div class="bg-grey-lighten-4 pa-4 rounded-lg">
-            <h4 class="text-caption font-weight-bold text-grey-darken-2 mb-1">Açıklama</h4>
-            <p class="text-body-1 whitespace-pre-wrap">{{ selectedTask.definition }}</p>
-          </div>
-        </div>
-
-        <!-- PARAMETRELER (METADATA) -->
-        <v-row class="mb-6">
-          <!-- Durum (State) Seçimi -->
-          <v-col cols="12" sm="6">
-            <v-select
-              v-model="selectedTask.state"
-              :items="stateItems"
-              label="Durum (State)"
-              variant="outlined"
-              density="comfortable"
-              @update:model-value="changeTaskState"
-            ></v-select>
-          </v-col>
-
-          <!-- Atanan Kişi (Assignee) -->
-          <v-col cols="12" sm="6">
-            <v-select
-              v-if="isStaff"
-              v-model="selectedTask.assignee"
-              :items="usersList"
-              item-title="username"
-              item-value="id"
-              label="Atanan Kişi"
-              variant="outlined"
-              density="comfortable"
-              @update:model-value="changeTaskAssignee"
-            ></v-select>
-            <v-text-field
-              v-else
-              :model-value="selectedTask.assignee_username || getAssigneeName(selectedTask.assignee)"
-              label="Atanan Kişi"
-              variant="outlined"
-              density="comfortable"
-              disabled
-            ></v-text-field>
-          </v-col>
-
-          <!-- Görev Tipi -->
-          <v-col cols="12" sm="6">
-            <v-select
-              v-model="selectedTask.task_type"
-              :items="typeOptions"
-              item-title="title"
-              item-value="value"
-              label="Görev Tipi"
-              variant="outlined"
-              density="comfortable"
-              @update:model-value="changeTaskType"
-            ></v-select>
-          </v-col>
-
-          <!-- Öncelik -->
-          <v-col cols="12" sm="6">
-            <v-select
-              v-model="selectedTask.priority"
-              :items="priorityOptions"
-              item-title="title"
-              item-value="value"
-              label="Öncelik"
-              variant="outlined"
-              density="comfortable"
-              @update:model-value="changeTaskPriority"
-            ></v-select>
-          </v-col>
-
-          <!-- Tahmini Süre -->
-          <v-col cols="12" sm="6">
-            <v-text-field
-              v-model.number="selectedTask.duration"
-              type="number"
-              label="Tahmini Süre (Saat)"
-              variant="outlined"
-              density="comfortable"
-              @change="changeTaskDuration(selectedTask.duration)"
-            ></v-text-field>
-          </v-col>
-
-          <!-- Teslim Tarihi -->
-          <v-col cols="12" sm="6">
-            <v-text-field
-              v-model="selectedTask.due_date"
-              type="date"
-              label="Teslim Tarihi"
-              variant="outlined"
-              density="comfortable"
-              @change="changeTaskDueDate(selectedTask.due_date)"
-            ></v-text-field>
-          </v-col>
-
-          <!-- Epic Seçimi -->
-          <v-col cols="12" sm="6">
-            <v-select
-              v-model="selectedTask.epic"
-              :items="['Kullanıcı Yönetimi', 'Kanban Panosu', 'Raporlama & CSV']"
-              label="Epic"
-              variant="outlined"
-              density="comfortable"
-              @update:model-value="changeTaskEpic"
-            ></v-select>
-          </v-col>
-
-          <!-- Sürüm (Version) Seçimi -->
-          <v-col cols="12" sm="6">
-            <v-select
-              v-model="selectedTask.version"
-              :items="['v1.0', 'v1.1', 'v2.0']"
-              label="Sürüm (Version)"
-              variant="outlined"
-              density="comfortable"
-              @update:model-value="changeTaskVersion"
-            ></v-select>
-          </v-col>
-
-          <!-- Oluşturan ve Tarih Bilgisi -->
-          <v-col cols="12">
-            <div class="d-flex justify-space-between bg-indigo-lighten-5 pa-3 rounded-lg text-caption text-indigo-darken-4">
-              <span>Oluşturan: <strong>{{ selectedTask.creator_username || getAssigneeName(selectedTask.creator) }}</strong></span>
-              <span>Tarih: <strong>{{ formatDate(selectedTask.create_date) }}</strong></span>
-            </div>
-          </v-col>
-        </v-row>
-
-        <v-divider class="mb-4"></v-divider>
-
-        <!-- YORUMLAR BÖLÜMÜ -->
-        <div class="comments-section">
-          <h3 class="text-subtitle-1 font-weight-bold mb-3 d-flex align-center">
-            <v-icon icon="mdi-comment-multiple-outline" class="mr-2" size="small"></v-icon>
-            Yorumlar ({{ selectedTask.comments ? selectedTask.comments.length : 0 }})
-          </h3>
-
-          <!-- Yorum Ekleme Input -->
-          <v-form class="mb-4">
-            <v-textarea
-              v-model="newCommentText"
-              placeholder="Yorum yazın..."
-              variant="outlined"
-              density="comfortable"
-              rows="2"
-              hide-details
-              class="mb-2"
-            ></v-textarea>
-            <v-btn
-              color="indigo"
-              size="small"
-              :loading="commentSaving"
-              @click="addComment"
-              :disabled="!newCommentText.trim()"
-            >
-              Yorum Ekle
+          <div class="d-flex align-center gap-1">
+            <v-btn size="x-small" variant="flat" color="blue-lighten-5" class="text-capitalize text-blue-darken-3 font-weight-bold mr-1" prepend-icon="mdi-eye-outline">
+              1 Watcher
             </v-btn>
-          </v-form>
+            <v-btn icon variant="text" size="small" color="grey-darken-2"><v-icon size="18">mdi-share-variant-outline</v-icon></v-btn>
+            <v-btn icon variant="text" size="small" color="grey-darken-2"><v-icon size="18">mdi-dots-horizontal</v-icon></v-btn>
+            <v-btn icon variant="text" size="small" color="grey-darken-2"><v-icon size="18">mdi-fullscreen</v-icon></v-btn>
+            <v-btn icon variant="text" size="small" color="grey-darken-2" @click="drawer = false"><v-icon size="18">mdi-close</v-icon></v-btn>
+          </div>
+        </div>
 
-          <!-- Yorum Listesi -->
-          <v-divider class="mb-4 border-opacity-25"></v-divider>
-          
-          <div v-if="selectedTask.comments && selectedTask.comments.length > 0">
-            <div v-for="comment in selectedTask.comments" :key="comment.id" class="comment-item mb-4 pa-3 bg-grey-lighten-5 rounded-lg border-left-grey">
-              <!-- Yorum Başlığı -->
-              <div class="d-flex justify-space-between align-center mb-1">
-                <span class="text-caption font-weight-bold text-indigo-darken-2">{{ comment.user }}</span>
-                <span class="text-xsmall text-grey-darken-1">{{ formatDate(comment.create_date) }}</span>
+        <v-row>
+          <!-- SOL KOLON (MAIN AREA) -->
+          <v-col cols="12" md="7">
+            <!-- Inline Görev Başlığı -->
+            <div class="mb-4">
+              <h2 
+                v-if="!editingTitleInline" 
+                class="text-h5 font-weight-bold cursor-pointer hover-bg-grey pa-1 rounded text-indigo-darken-4"
+                @click="editingTitleInline = true; inlineTitleVal = selectedTask.title"
+                title="Başlığı düzenlemek için tıklayın"
+              >
+                {{ selectedTask.title }}
+              </h2>
+              <div v-else class="d-flex align-center gap-2">
+                <v-text-field
+                  v-model="inlineTitleVal"
+                  variant="outlined"
+                  density="compact"
+                  hide-details
+                  autofocus
+                  @keydown.enter="saveTitleInline"
+                  @blur="saveTitleInline"
+                  class="flex-grow-1"
+                ></v-text-field>
+              </div>
+            </div>
+
+            <!-- Description (Açıklama) -->
+            <div class="mb-6">
+              <div class="d-flex align-center gap-2 mb-2">
+                <h3 class="text-subtitle-1 font-weight-bold text-grey-darken-3">Description</h3>
+                <v-icon size="16" color="grey-darken-1">mdi-pencil-outline</v-icon>
+              </div>
+              <div 
+                v-if="!editingDescInline" 
+                class="bg-grey-lighten-4 pa-4 rounded-lg cursor-pointer hover-bg-grey-dark description-box" 
+                @click="editingDescInline = true; inlineDescVal = selectedTask.definition"
+                title="Açıklamayı düzenlemek için tıklayın"
+              >
+                <p v-if="selectedTask.definition" class="text-body-2 whitespace-pre-wrap text-grey-darken-3">{{ selectedTask.definition }}</p>
+                <p v-else class="text-body-2 text-grey italic">Açıklama ekleyin...</p>
+              </div>
+              <div v-else>
+                <v-textarea
+                  v-model="inlineDescVal"
+                  variant="outlined"
+                  density="comfortable"
+                  rows="3"
+                  hide-details
+                  class="mb-2"
+                ></v-textarea>
+                <v-btn color="indigo" size="x-small" class="mr-2" @click="saveDescInline">Kaydet</v-btn>
+                <v-btn color="grey" variant="text" size="x-small" @click="editingDescInline = false">İptal</v-btn>
+              </div>
+            </div>
+
+            <!-- Subtasks (Alt Görevler) -->
+            <div class="mb-6">
+              <h3 class="text-subtitle-1 font-weight-bold text-grey-darken-3 mb-2">Subtasks</h3>
+              
+              <!-- Add Subtask Button / Input -->
+              <div v-if="!showAddSubtaskInput" class="d-flex align-center gap-2 text-caption text-blue-darken-2 font-weight-bold cursor-pointer hover-text-blue pb-2 border-bottom border-dashed mb-2" @click="showAddSubtaskInput = true">
+                <v-icon size="16">mdi-plus</v-icon>
+                <span>Add subtask</span>
+              </div>
+              <div v-else class="mb-3">
+                <v-text-field
+                  v-model="newSubtaskTitle"
+                  placeholder="Alt görev başlığı girin..."
+                  variant="outlined"
+                  density="compact"
+                  hide-details
+                  autofocus
+                  @keydown.enter="saveSubtask"
+                  class="mb-2"
+                ></v-text-field>
+                <div class="d-flex gap-2">
+                  <v-btn color="indigo" size="x-small" @click="saveSubtask" :loading="subtaskSaving">Kaydet</v-btn>
+                  <v-btn color="grey" variant="text" size="x-small" @click="showAddSubtaskInput = false; newSubtaskTitle = ''">İptal</v-btn>
+                </div>
               </div>
 
-              <!-- Yorum İçeriği Düzenleme Modu -->
-              <div v-if="editingCommentId === comment.id">
+              <!-- Subtasks List -->
+              <div v-if="selectedTask.subtasks && selectedTask.subtasks.length > 0">
+                <div 
+                  v-for="(subtask, idx) in selectedTask.subtasks" 
+                  :key="subtask.id"
+                  class="d-flex align-center gap-2 pa-2 bg-grey-lighten-4 rounded text-caption text-grey-darken-1 mb-1"
+                >
+                  <v-icon 
+                    size="16" 
+                    :color="subtask.state === 'done' ? 'green' : 'grey'"
+                    @click="toggleSubtaskState(subtask)"
+                    class="cursor-pointer"
+                  >
+                    {{ subtask.state === 'done' ? 'mdi-checkbox-marked-circle-outline' : 'mdi-checkbox-blank-circle-outline' }}
+                  </v-icon>
+                  <span class="text-indigo-darken-1 font-weight-bold">TASK-{{ selectedTask.id }}-{{ idx + 1 }}</span>
+                  <span class="flex-grow-1 text-truncate" :style="subtask.state === 'done' ? 'text-decoration: line-through;' : ''">
+                    {{ subtask.title }}
+                  </span>
+                  
+                  <v-chip 
+                    size="x-small" 
+                    :color="subtask.state === 'done' ? 'green' : 'blue-darken-2'" 
+                    variant="flat" 
+                    class="text-uppercase font-weight-bold"
+                  >
+                    {{ subtask.state }}
+                  </v-chip>
+                  
+                  <v-btn 
+                    icon="mdi-delete" 
+                    variant="text" 
+                    size="x-small" 
+                    color="red" 
+                    @click="deleteSubtask(subtask.id)"
+                    title="Alt görevi sil"
+                  ></v-btn>
+                </div>
+              </div>
+              <div v-else class="text-caption text-grey-darken-1 text-center py-2 bg-grey-lighten-5 rounded border border-dashed">
+                Henüz alt görev eklenmemiş.
+              </div>
+            </div>
+
+            <!-- Linked work items -->
+            <div class="mb-6">
+              <div class="d-flex justify-space-between align-center mb-2">
+                <h3 class="text-subtitle-1 font-weight-bold text-grey-darken-3">Linked work items</h3>
+                <v-icon size="16" class="cursor-pointer" color="grey-darken-1">mdi-plus</v-icon>
+              </div>
+              <span class="text-caption text-grey-darken-1 font-weight-bold d-block mb-2">relates to</span>
+              <div class="d-flex align-center justify-space-between pa-2 bg-grey-lighten-4 rounded border mb-2">
+                <div class="d-flex align-center gap-2 overflow-hidden">
+                  <v-icon size="14" color="blue">mdi-checkbox-marked-circle-outline</v-icon>
+                  <span class="text-caption text-indigo-darken-1 font-weight-bold">MSP-7979</span>
+                  <span class="text-caption text-grey-darken-3 text-truncate font-weight-medium" style="max-width: 250px;">HR Özlük Verilerinin DB'den Silinmesi</span>
+                </div>
+                <div class="d-flex align-center gap-2">
+                  <v-chip size="x-small" color="red-darken-4" variant="flat" class="font-weight-bold text-uppercase">Blocked (Test)</v-chip>
+                  <v-avatar color="indigo-lighten-4" size="18">
+                    <span class="text-xsmall font-weight-bold">SC</span>
+                  </v-avatar>
+                </div>
+              </div>
+            </div>
+
+            <!-- Confluence content -->
+            <div class="mb-6">
+              <div class="d-flex justify-space-between align-center mb-2">
+                <h3 class="text-subtitle-1 font-weight-bold text-grey-darken-3">Confluence content</h3>
+                <v-icon size="16" class="cursor-pointer" color="grey-darken-1">mdi-dots-horizontal</v-icon>
+              </div>
+              <div class="d-flex align-center justify-space-between pa-2 bg-grey-lighten-4 rounded border">
+                <div class="d-flex align-center gap-2">
+                  <v-icon size="16" color="blue">mdi-page-layout-header</v-icon>
+                  <span class="text-caption font-weight-bold text-blue-darken-3 cursor-pointer">Project plan</span>
+                </div>
+                <v-chip size="x-small" color="purple-lighten-5" text-color="purple-darken-4" class="font-weight-bold">REQUEST TO TRY</v-chip>
+              </div>
+            </div>
+
+            <!-- Attachments (Dosyalar) -->
+            <div class="attachments-section mb-6 border-top pt-4">
+              <div class="d-flex justify-space-between align-center mb-3">
+                <h3 class="text-subtitle-1 font-weight-bold text-grey-darken-3 d-flex align-center">
+                  <v-icon icon="mdi-paperclip" class="mr-2" size="small"></v-icon>
+                  Dosyalar ({{ selectedTask.attachments ? selectedTask.attachments.length : 0 }})
+                </h3>
+                <div>
+                  <v-btn 
+                    color="indigo" 
+                    variant="outlined" 
+                    size="small" 
+                    prepend-icon="mdi-upload" 
+                    @click="$refs.taskFileInput.click()"
+                  >
+                    Dosya Ekle
+                  </v-btn>
+                  <input 
+                    ref="taskFileInput" 
+                    type="file" 
+                    style="display: none" 
+                    @change="handleTaskFileUpload"
+                  />
+                </div>
+              </div>
+              <div v-if="selectedTask.attachments && selectedTask.attachments.length > 0" class="d-flex flex-column gap-2">
+                <div 
+                  v-for="file in selectedTask.attachments" 
+                  :key="file.id" 
+                  class="d-flex align-center justify-space-between pa-2 bg-grey-lighten-4 rounded border"
+                >
+                  <div class="d-flex align-center gap-2 overflow-hidden">
+                    <v-icon :icon="getFileIcon(file.file_type)" color="grey-darken-1"></v-icon>
+                    <span class="text-caption font-weight-medium text-truncate" style="max-width: 250px;">{{ file.name }}</span>
+                  </div>
+                  <div class="d-flex gap-1">
+                    <v-btn icon="mdi-download" variant="text" size="x-small" color="indigo" @click="downloadAttachment(file)"></v-btn>
+                    <v-btn icon="mdi-delete" variant="text" size="x-small" color="red" @click="deleteAttachment(file)"></v-btn>
+                  </div>
+                </div>
+              </div>
+              <div v-else class="text-caption text-grey-darken-1 text-center py-2 bg-grey-lighten-5 rounded border border-dashed">
+                Henüz dosya eklenmemiş.
+              </div>
+            </div>
+
+            <!-- Comments (Yorumlar) -->
+            <div class="comments-section border-top pt-4">
+              <h3 class="text-subtitle-1 font-weight-bold mb-3 text-grey-darken-3 d-flex align-center">
+                <v-icon icon="mdi-comment-multiple-outline" class="mr-2" size="small"></v-icon>
+                Yorumlar ({{ selectedTask.comments ? selectedTask.comments.length : 0 }})
+              </h3>
+              
+              <v-form class="mb-4">
                 <v-textarea
-                  v-model="editCommentText"
+                  v-model="newCommentText"
+                  placeholder="Yorum yazın..."
                   variant="outlined"
                   density="comfortable"
                   rows="2"
                   hide-details
                   class="mb-2"
                 ></v-textarea>
-                <v-btn color="indigo" size="x-small" class="mr-1" @click="saveComment(comment)">Kaydet</v-btn>
-                <v-btn color="grey" size="x-small" variant="text" @click="editingCommentId = null">İptal</v-btn>
-              </div>
-              
-              <!-- Yorum İçeriği Gösterim Modu -->
-              <div v-else>
-                <p class="text-body-2 whitespace-pre-wrap text-grey-darken-3">{{ comment.description }}</p>
-                <!-- İşlem Butonları (Yalnızca yorum sahibi ya da admin düzenleyebilir/silebilir) -->
-                <div v-if="canManageComment(comment)" class="d-flex justify-end gap-1 mt-1">
+                
+                <div v-if="commentFile" class="d-flex align-center justify-space-between text-caption bg-indigo-lighten-5 pa-2 rounded mb-2">
+                  <span class="text-truncate" style="max-width: 250px;">
+                    <v-icon size="14" class="mr-1">mdi-paperclip</v-icon>
+                    {{ commentFile.name }}
+                  </span>
+                  <v-btn icon="mdi-close" variant="text" size="x-small" color="red" @click="commentFile = null"></v-btn>
+                </div>
+
+                <div class="d-flex align-center gap-2">
                   <v-btn
-                    icon="mdi-pencil"
-                    variant="text"
-                    size="x-small"
-                    color="grey-darken-1"
-                    @click="startEditComment(comment)"
+                    color="indigo"
+                    variant="flat"
+                    size="small"
+                    :loading="commentSaving"
+                    @click="addComment"
+                    :disabled="!newCommentText.trim() && !commentFile"
+                  >
+                    Yorum Yap
+                  </v-btn>
+                  <v-btn 
+                    color="indigo" 
+                    variant="outlined" 
+                    size="small" 
+                    icon="mdi-paperclip"
+                    @click="$refs.commentFileInput.click()"
                   ></v-btn>
-                  <v-btn
-                    icon="mdi-delete"
-                    variant="text"
-                    size="x-small"
-                    color="red-darken-1"
-                    @click="confirmDeleteComment(comment)"
-                  ></v-btn>
+                  <input ref="commentFileInput" type="file" style="display: none" @change="handleCommentFileSelection" />
+                </div>
+              </v-form>
+
+              <v-divider class="mb-4 border-opacity-25"></v-divider>
+
+              <div v-if="selectedTask.comments && selectedTask.comments.length > 0">
+                <div v-for="comment in selectedTask.comments" :key="comment.id" class="comment-item mb-4 pa-3 bg-grey-lighten-5 rounded-lg border-left-grey">
+                  <div class="d-flex align-center justify-space-between mb-2">
+                    <div class="d-flex align-center gap-2">
+                      <v-avatar color="indigo-lighten-4" size="24" class="text-caption font-weight-bold flex-shrink-0">
+                        <v-img v-if="comment.user_avatar" :src="comment.user_avatar"></v-img>
+                        <span v-else>{{ (comment.user || 'US').substring(0,2).toUpperCase() }}</span>
+                      </v-avatar>
+                      <span class="text-caption font-weight-bold text-indigo-darken-2">{{ comment.user }}</span>
+                    </div>
+                    <span class="text-xsmall text-grey-darken-1">{{ formatDate(comment.create_date) }}</span>
+                  </div>
+                  <div v-if="editingCommentId === comment.id">
+                    <v-textarea v-model="editCommentText" variant="outlined" density="comfortable" rows="2" hide-details class="mb-2"></v-textarea>
+                    <v-btn color="indigo" size="x-small" class="mr-1" @click="saveComment(comment)">Kaydet</v-btn>
+                    <v-btn color="grey" size="x-small" variant="text" @click="editingCommentId = null">İptal</v-btn>
+                  </div>
+                  <div v-else>
+                    <p class="text-body-2 whitespace-pre-wrap text-grey-darken-3">{{ comment.description }}</p>
+                    <div v-if="comment.attachments && comment.attachments.length > 0" class="mt-2 d-flex flex-wrap gap-1">
+                      <v-chip 
+                        v-for="file in comment.attachments" 
+                        :key="file.id" 
+                        size="x-small" 
+                        color="indigo" 
+                        variant="tonal" 
+                        class="font-weight-bold"
+                        @click="downloadAttachment(file)"
+                      >
+                        <v-icon size="12" class="mr-1">mdi-paperclip</v-icon>
+                        {{ file.name }}
+                      </v-chip>
+                    </div>
+                    <div v-if="canManageComment(comment)" class="d-flex justify-end gap-1 mt-1">
+                      <v-btn icon="mdi-pencil" variant="text" size="x-small" color="grey-darken-1" @click="startEditComment(comment)"></v-btn>
+                      <v-btn icon="mdi-delete" variant="text" size="x-small" color="red-darken-1" @click="confirmDeleteComment(comment)"></v-btn>
+                    </div>
+                  </div>
                 </div>
               </div>
+              <div v-else class="text-caption text-grey-darken-1 text-center py-4">Henüz yorum yapılmamış. İlk yorumu siz yazın!</div>
             </div>
-          </div>
-          <div v-else class="text-caption text-grey-darken-1 text-center py-4">Henüz yorum yapılmamış. İlk yorumu siz yazın!</div>
-        </div>
+          </v-col>
+
+          <!-- SAĞ KOLON (METADATA SIDEBAR) -->
+          <v-col cols="12" md="5">
+            <!-- Status Dropdown & General Actions -->
+            <div class="d-flex align-center justify-space-between mb-4 flex-wrap gap-2">
+              <v-menu>
+                <template v-slot:activator="{ props }">
+                  <v-btn
+                    v-bind="props"
+                    color="blue"
+                    variant="flat"
+                    size="small"
+                    class="text-uppercase font-weight-bold text-white"
+                    append-icon="mdi-chevron-down"
+                  >
+                    {{ selectedTask.state }}
+                  </v-btn>
+                </template>
+                <v-list density="compact">
+                  <v-list-item 
+                    v-for="item in stateItems" 
+                    :key="item.value" 
+                    :title="item.title"
+                    @click="selectedTask.state = item.value; changeTaskState(item.value)"
+                  ></v-list-item>
+                </v-list>
+              </v-menu>
+
+              <div class="d-flex align-center gap-1">
+                <v-btn variant="outlined" size="small" prepend-icon="mdi-robot-outline" class="text-capitalize font-weight-bold">Agents</v-btn>
+                <v-btn icon variant="text" size="small" color="grey-darken-2"><v-icon size="18">mdi-code-tags</v-icon></v-btn>
+                <v-btn icon variant="text" size="small" color="grey-darken-2" @click="confirmDeleteTask" title="Sil"><v-icon size="18">mdi-delete-outline</v-icon></v-btn>
+              </div>
+            </div>
+
+            <!-- Improve Task Button -->
+            <v-btn block color="blue-lighten-5" variant="flat" size="small" class="text-capitalize text-blue-darken-3 font-weight-bold mb-4" prepend-icon="mdi-auto-fix">
+              Improve Task
+            </v-btn>
+
+            <!-- DETAILS COLLAPSIBLE CARD -->
+            <v-card variant="outlined" class="pa-4 border rounded-lg bg-grey-lighten-5">
+              <div class="d-flex justify-space-between align-center mb-4">
+                <span class="font-weight-bold text-subtitle-2 text-grey-darken-3">Details</span>
+                <v-icon size="16">mdi-chevron-up</v-icon>
+              </div>
+              
+              <v-divider class="mb-4"></v-divider>
+
+              <!-- Assignee -->
+              <div class="mb-4">
+                <label class="text-caption font-weight-bold text-grey-darken-1 d-block mb-1">Assignee</label>
+                <div class="d-flex align-center gap-2">
+                  <v-select
+                    v-if="isStaff"
+                    v-model="selectedTask.assignee"
+                    :items="usersList"
+                    item-title="username"
+                    item-value="id"
+                    variant="outlined"
+                    density="compact"
+                    hide-details
+                    @update:model-value="changeTaskAssignee"
+                    class="flex-grow-1 bg-white"
+                  >
+                    <template v-slot:selection="{ item }">
+                      <div v-if="item && item.raw" class="d-flex align-center gap-2">
+                        <v-avatar size="24" color="indigo-lighten-4">
+                          <v-img v-if="item.raw.avatar" :src="item.raw.avatar"></v-img>
+                          <span v-else>{{ (item.raw.username || '').substring(0,2).toUpperCase() }}</span>
+                        </v-avatar>
+                        <span>{{ item.raw.username }}</span>
+                      </div>
+                    </template>
+                  </v-select>
+                  <div v-else class="d-flex align-center gap-2">
+                    <v-avatar size="24" color="indigo-lighten-4">
+                      <v-img v-if="selectedTask.assignee_avatar" :src="selectedTask.assignee_avatar"></v-img>
+                      <span v-else>{{ (selectedTask.assignee_username || '').substring(0,2).toUpperCase() }}</span>
+                    </v-avatar>
+                    <span class="text-body-2 font-weight-bold">{{ selectedTask.assignee_username }}</span>
+                  </div>
+                </div>
+                <a href="#" class="text-caption text-blue-darken-2 font-weight-bold d-inline-block mt-1 text-decoration-none" @click.prevent="assignToMe">Assign to me</a>
+              </div>
+
+              <!-- Reporter -->
+              <div class="mb-4">
+                <label class="text-caption font-weight-bold text-grey-darken-1 d-block mb-1">Reporter</label>
+                <div class="d-flex align-center gap-2">
+                  <v-avatar size="24" color="indigo-lighten-4">
+                    <v-img v-if="selectedTask.creator_avatar" :src="selectedTask.creator_avatar"></v-img>
+                    <span v-else>{{ (selectedTask.creator_username || 'US').substring(0,2).toUpperCase() }}</span>
+                  </v-avatar>
+                  <span class="text-body-2 font-weight-bold text-grey-darken-3">{{ selectedTask.creator_username || getAssigneeName(selectedTask.creator) }}</span>
+                </div>
+              </div>
+
+              <!-- Labels -->
+              <div class="mb-4">
+                <label class="text-caption font-weight-bold text-grey-darken-1 d-block mb-1">Labels</label>
+                <v-chip size="small" color="blue-grey" variant="tonal" class="font-weight-bold">GoJira</v-chip>
+              </div>
+
+              <!-- Due Date -->
+              <div class="mb-4">
+                <label class="text-caption font-weight-bold text-grey-darken-1 d-block mb-1">Due Date</label>
+                <v-text-field
+                  v-model="selectedTask.due_date"
+                  type="date"
+                  variant="outlined"
+                  density="compact"
+                  hide-details
+                  @change="changeTaskDueDate(selectedTask.due_date)"
+                  class="bg-white"
+                ></v-text-field>
+              </div>
+
+              <!-- Original Estimate -->
+              <div class="mb-4">
+                <label class="text-caption font-weight-bold text-grey-darken-1 d-block mb-1">Original Estimate (Hours)</label>
+                <v-text-field
+                  v-model.number="selectedTask.duration"
+                  type="number"
+                  variant="outlined"
+                  density="compact"
+                  hide-details
+                  @change="changeTaskDuration(selectedTask.duration)"
+                  class="bg-white"
+                ></v-text-field>
+              </div>
+
+              <!-- Department -->
+              <div class="mb-4">
+                <label class="text-caption font-weight-bold text-grey-darken-1 d-block mb-1">Department</label>
+                <div class="text-body-2 font-weight-bold text-grey-darken-3 py-2 px-3 bg-white rounded border">
+                  Yazılım
+                </div>
+              </div>
+
+              <!-- Epic -->
+              <div class="mb-4">
+                <label class="text-caption font-weight-bold text-grey-darken-1 d-block mb-1">Epic</label>
+                <v-select
+                  v-model="selectedTask.epic"
+                  :items="['Kullanıcı Yönetimi', 'Kanban Panosu', 'Raporlama & CSV']"
+                  variant="outlined"
+                  density="compact"
+                  hide-details
+                  @update:model-value="changeTaskEpic"
+                  class="bg-white"
+                ></v-select>
+              </div>
+
+              <!-- Version -->
+              <div class="mb-4">
+                <label class="text-caption font-weight-bold text-grey-darken-1 d-block mb-1">Version</label>
+                <v-select
+                  v-model="selectedTask.version"
+                  :items="['v1.0', 'v1.1', 'v2.0']"
+                  variant="outlined"
+                  density="compact"
+                  hide-details
+                  @update:model-value="changeTaskVersion"
+                  class="bg-white"
+                ></v-select>
+              </div>
+
+              <!-- Priority -->
+              <div class="mb-4">
+                <label class="text-caption font-weight-bold text-grey-darken-1 d-block mb-1">Priority</label>
+                <v-select
+                  v-model="selectedTask.priority"
+                  :items="priorityOptions"
+                  item-title="title"
+                  item-value="value"
+                  variant="outlined"
+                  density="compact"
+                  hide-details
+                  @update:model-value="changeTaskPriority"
+                  class="bg-white"
+                ></v-select>
+              </div>
+            </v-card>
+          </v-col>
+        </v-row>
       </v-container>
     </v-navigation-drawer>
 
@@ -953,6 +1212,17 @@ const editCommentText = ref('')
 const deleteCommentDialog = ref(false)
 const commentToDelete = ref(null)
 const commentDeleting = ref(false)
+const commentFile = ref(null)
+
+// Alt Görev Kontrolleri
+const showAddSubtaskInput = ref(false)
+const newSubtaskTitle = ref('')
+const subtaskSaving = ref(false)
+
+const editingTitleInline = ref(false)
+const inlineTitleVal = ref('')
+const editingDescInline = ref(false)
+const inlineDescVal = ref('')
 
 // Durum (State) Seçenekleri
 const stateItems = [
@@ -1064,7 +1334,7 @@ const formatShortDate = (dateStr) => {
 }
 
 const getTasksByState = (stateKey) => {
-  let filtered = tasks.value.filter(t => t.state === stateKey)
+  let filtered = tasks.value.filter(t => t.state === stateKey && !t.parent)
   
   if (searchQuery.value) {
     const q = searchQuery.value.toLowerCase()
@@ -1216,8 +1486,113 @@ const formatDate = (dateStr) => {
 const selectTask = (task) => {
   selectedTask.value = task
   isEditingTask.value = false
+  editingTitleInline.value = false
+  editingDescInline.value = false
   newCommentText.value = ''
+  commentFile.value = null
+  showAddSubtaskInput.value = false
+  newSubtaskTitle.value = ''
   drawer.value = true
+  refreshTaskDetails()
+}
+
+const saveSubtask = async () => {
+  if (!newSubtaskTitle.value.trim() || !selectedTask.value) return
+  subtaskSaving.value = true
+  try {
+    await api.post('tasks/', {
+      title: newSubtaskTitle.value.trim(),
+      definition: 'Alt Görev',
+      parent: selectedTask.value.id,
+      assignee: selectedTask.value.assignee || currentUserId.value,
+      state: 'to do'
+    })
+    newSubtaskTitle.value = ''
+    showAddSubtaskInput.value = false
+    await refreshTaskDetails()
+    await fetchTasks()
+  } catch (error) {
+    console.error("Alt görev eklenirken hata oluştu:", error)
+    alert("Alt görev eklenemedi.")
+  } finally {
+    subtaskSaving.value = false
+  }
+}
+
+const toggleSubtaskState = async (subtask) => {
+  const newState = subtask.state === 'done' ? 'to do' : 'done'
+  try {
+    await api.patch(`tasks/${subtask.id}/`, { state: newState })
+    await refreshTaskDetails()
+    await fetchTasks()
+  } catch (error) {
+    console.error("Alt görev durumu güncellenemedi:", error)
+    alert("Alt görev durumu güncellenemedi.")
+  }
+}
+
+const deleteSubtask = async (subtaskId) => {
+  if (!confirm("Bu alt görevi silmek istediğinizden emin misiniz?")) return
+  try {
+    await api.delete(`tasks/${subtaskId}/`)
+    await refreshTaskDetails()
+    await fetchTasks()
+  } catch (error) {
+    console.error("Alt görev silinirken hata oluştu:", error)
+    alert("Alt görev silinemedi.")
+  }
+}
+
+const saveTitleInline = async () => {
+  if (!selectedTask.value || !inlineTitleVal.value.trim()) {
+    editingTitleInline.value = false
+    return
+  }
+  try {
+    const id = selectedTask.value.id
+    await api.patch(`tasks/${id}/`, { title: inlineTitleVal.value.trim() })
+    const index = tasks.value.findIndex(t => t.id === id)
+    if (index !== -1) {
+      tasks.value[index].title = inlineTitleVal.value.trim()
+    }
+    selectedTask.value.title = inlineTitleVal.value.trim()
+    editingTitleInline.value = false
+  } catch (error) {
+    console.error("Başlık güncellenemedi:", error)
+  }
+}
+
+const saveDescInline = async () => {
+  if (!selectedTask.value) return
+  try {
+    const id = selectedTask.value.id
+    await api.patch(`tasks/${id}/`, { definition: inlineDescVal.value })
+    const index = tasks.value.findIndex(t => t.id === id)
+    if (index !== -1) {
+      tasks.value[index].definition = inlineDescVal.value
+    }
+    selectedTask.value.definition = inlineDescVal.value
+    editingDescInline.value = false
+  } catch (error) {
+    console.error("Açıklama güncellenemedi:", error)
+  }
+}
+
+const assignToMe = async () => {
+  if (!selectedTask.value) return
+  try {
+    const id = selectedTask.value.id
+    await api.patch(`tasks/${id}/`, { assignee: currentUserId.value })
+    const index = tasks.value.findIndex(t => t.id === id)
+    if (index !== -1) {
+      tasks.value[index].assignee = currentUserId.value
+      tasks.value[index].assignee_username = currentUsername.value
+    }
+    await refreshTaskDetails()
+    fetchTasks()
+  } catch (error) {
+    console.error("Görev atanamadı:", error)
+  }
 }
 
 // Görev Ekleme Pop-up'ını Aç
@@ -1467,13 +1842,13 @@ const deleteTask = async () => {
   }
 }
 
-// Görevin Detaylarını Yenile (Yorumlar eklendiğinde/silindiğinde kullanmak için)
+// Görevin Detaylarını Yenile (Yorumlar/Dosyalar eklendiğinde/silindiğinde kullanmak için)
 const refreshTaskDetails = async () => {
   if (!selectedTask.value) return
   try {
     const id = selectedTask.value.id
     const response = await api.get(`tasks/${id}/`)
-    selectedTask.value.comments = response.data.comments
+    selectedTask.value = response.data
   } catch (error) {
     console.error("Görev detayları yenilenirken hata oluştu:", error)
   }
@@ -1481,13 +1856,25 @@ const refreshTaskDetails = async () => {
 
 // Yorum Ekle
 const addComment = async () => {
-  if (!selectedTask.value || !newCommentText.value.trim()) return
+  if (!selectedTask.value) return
+  if (!newCommentText.value.trim() && !commentFile.value) return
   commentSaving.value = true
   try {
-    await api.post('comments/', {
+    const commentRes = await api.post('comments/', {
       task: selectedTask.value.id,
       description: newCommentText.value.trim()
     })
+    
+    if (commentFile.value) {
+      await api.post('attachments/', {
+        comment: commentRes.data.id,
+        name: commentFile.value.name,
+        file_data: commentFile.value.data,
+        file_type: commentFile.value.type
+      })
+      commentFile.value = null
+    }
+
     newCommentText.value = ''
     // Detayları yenileyerek yeni yorumu listeye ekle
     await refreshTaskDetails()
@@ -1497,6 +1884,78 @@ const addComment = async () => {
   } finally {
     commentSaving.value = false
   }
+}
+
+// Görev Dosyası Yükleme
+const handleTaskFileUpload = async (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = async () => {
+    try {
+      await api.post('attachments/', {
+        task: selectedTask.value.id,
+        name: file.name,
+        file_data: reader.result,
+        file_type: file.type
+      })
+      await refreshTaskDetails()
+      // Panodaki dosya/durum güncelliği için görevleri yeniden çek
+      fetchTasks()
+    } catch (error) {
+      console.error("Dosya yüklenemedi:", error)
+      alert("Dosya yüklenirken bir hata oluştu.")
+    }
+  }
+  reader.readAsDataURL(file)
+}
+
+// Yorum Dosyası Seçme
+const handleCommentFileSelection = (event) => {
+  const file = event.target.files[0]
+  if (!file) return
+  const reader = new FileReader()
+  reader.onload = () => {
+    commentFile.value = {
+      name: file.name,
+      data: reader.result,
+      type: file.type
+    }
+  }
+  reader.readAsDataURL(file)
+}
+
+// Dosya İndirme
+const downloadAttachment = (file) => {
+  const link = document.createElement('a')
+  link.href = file.file_data
+  link.setAttribute('download', file.name)
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+}
+
+// Dosya Silme
+const deleteAttachment = async (file) => {
+  if (!confirm("Bu dosyayı silmek istediğinizden emin misiniz?")) return
+  try {
+    await api.delete(`attachments/${file.id}/`)
+    await refreshTaskDetails()
+    fetchTasks()
+  } catch (error) {
+    console.error("Dosya silinemedi:", error)
+    alert("Dosya silinirken bir hata oluştu.")
+  }
+}
+
+// Dosya İkonu Çöz
+const getFileIcon = (fileType) => {
+  if (!fileType) return 'mdi-file'
+  if (fileType.includes('image')) return 'mdi-file-image'
+  if (fileType.includes('pdf')) return 'mdi-file-pdf-box'
+  if (fileType.includes('word') || fileType.includes('officedocument')) return 'mdi-file-word'
+  if (fileType.includes('excel') || fileType.includes('sheet') || fileType.includes('csv')) return 'mdi-file-excel'
+  return 'mdi-file-document'
 }
 
 // Yorum Yetki Kontrolü (Sahibi veya Admin silebilir/düzenleyebilir)

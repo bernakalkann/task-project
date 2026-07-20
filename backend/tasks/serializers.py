@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from .models import User, Task, Comment
+from rest_framework import serializers
+from .models import Notification
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=False, style={'input_type': 'password'})
@@ -48,3 +50,10 @@ class TaskSerializer(serializers.ModelSerializer):
             if value != request.user:
                 raise serializers.ValidationError("Normal kullanıcılar sadece kendilerine görev atayabilirler.")
         return value
+    
+
+
+class NotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Notification
+        fields = ['id', 'message', 'is_read', 'created_at']

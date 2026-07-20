@@ -6,6 +6,9 @@ from rest_framework.authtoken.models import Token
 from .models import User, Task, Comment
 from .serializers import UserSerializer, TaskSerializer, CommentSerializer
 from .permissions import IsCommentOwnerOrAdmin
+from rest_framework import viewsets, permissions
+from .models import Notification
+from .serializers import NotificationSerializer
 
 # Sadece adminlerin kullanıcı yönetimi yapabilmesi için özel izin sınıfı
 class IsAdminUser(permissions.BasePermission):
@@ -83,3 +86,20 @@ class CustomObtainAuthToken(ObtainAuthToken):
             'email': user.email,
             'is_staff': user.is_staff
         })
+    
+
+
+class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = NotificationSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        # Sadece giriş yapmış kullanıcının bildirimlerini getir
+        return Notification.objects.filter(user=self.request.user)
+    
+    @action(detail=True, methods=['post'])
+    def mark_as_read(self, request, pk=None):
+        notification = self.get_object()
+        notification.is_read = True
+        notification.save()
+        return Response({'status': 'ok'})

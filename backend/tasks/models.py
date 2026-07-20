@@ -44,6 +44,8 @@ class Task(models.Model):
     task_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='task')
     duration = models.PositiveIntegerField(default=0, help_text="Tahmini süre (saat)")
     due_date = models.DateField(null=True, blank=True)
+    epic = models.CharField(max_length=100, blank=True, null=True, default='')
+    version = models.CharField(max_length=50, blank=True, null=True, default='')
 
     def __str__(self):
         return self.title

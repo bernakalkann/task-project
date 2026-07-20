@@ -51,17 +51,15 @@
     </v-row>
 
     <!-- Sub-navigation Tabs -->
-    <div class="mx-2 mb-4 d-flex align-center border-bottom pb-1 overflow-x-auto" style="gap: 20px; font-family: sans-serif;">
-      <span class="tab-item text-body-2 font-weight-medium text-grey-darken-1 pb-2">Testing Board</span>
-      <span class="tab-item active-tab text-body-2 font-weight-bold text-blue-darken-2 pb-2">Active sprints</span>
-      <span class="tab-item text-body-2 font-weight-medium text-grey-darken-1 pb-2">Backlog</span>
-      <span class="tab-item text-body-2 font-weight-medium text-grey-darken-1 pb-2">Releases</span>
-      <span class="tab-item text-body-2 font-weight-medium text-grey-darken-1 pb-2">Summary</span>
-      <span class="tab-item text-body-2 font-weight-medium text-grey-darken-1 pb-2">Timeline</span>
-      <span class="tab-item text-body-2 font-weight-medium text-grey-darken-1 pb-2">Calendar</span>
-      <span class="tab-item text-body-2 font-weight-medium text-grey-darken-1 pb-2">Reports</span>
-      <span class="tab-item text-body-2 font-weight-medium text-grey-darken-1 pb-2">List</span>
-      <span class="tab-item text-body-2 font-weight-medium text-grey-darken-1 pb-2">Issues</span>
+    <div class="mx-2 mb-4 d-flex align-center border-bottom pb-1 overflow-x-auto" style="gap: 20px; font-family: sans-serif; cursor: pointer;">
+      <span 
+        v-for="tab in ['Testing Board', 'Active sprints', 'Backlog', 'Releases', 'Summary', 'Timeline', 'Calendar', 'Reports', 'List', 'Issues']"
+        :key="tab"
+        :class="['tab-item text-body-2 pb-2 transition-all', activeTab === tab ? 'active-tab font-weight-bold text-blue-darken-2 border-bottom-blue' : 'font-weight-medium text-grey-darken-1']"
+        @click="activeTab = tab"
+      >
+        {{ tab }}
+      </span>
     </div>
 
     <!-- Filtre Araç Çubuğu (Jira Tarzı Tek Sıra ve Kaydırılabilir) -->
@@ -104,9 +102,45 @@
         </v-avatar>
       </div>
 
-      <!-- Sürüm ve Epic Filtreleri (Static) -->
-      <v-btn variant="outlined" size="small" class="text-capitalize text-grey-darken-3 font-weight-medium mr-1 flex-shrink-0" color="grey-lighten-1">Version <v-icon size="14" class="ml-1">mdi-chevron-down</v-icon></v-btn>
-      <v-btn variant="outlined" size="small" class="text-capitalize text-grey-darken-3 font-weight-medium mr-1 flex-shrink-0" color="grey-lighten-1">Epic <v-icon size="14" class="ml-1">mdi-chevron-down</v-icon></v-btn>
+      <!-- Sürüm Filtresi (Interactive) -->
+      <v-menu>
+        <template v-slot:activator="{ props }">
+          <v-btn
+            variant="outlined"
+            :color="selectedVersionFilter ? 'blue-darken-2' : 'grey-lighten-1'"
+            size="small"
+            class="text-capitalize text-grey-darken-3 font-weight-medium mr-1 flex-shrink-0"
+            v-bind="props"
+          >
+            Sürüm: {{ selectedVersionFilter || 'Tümü' }}
+            <v-icon size="14" class="ml-1">mdi-chevron-down</v-icon>
+          </v-btn>
+        </template>
+        <v-list density="compact">
+          <v-list-item title="Tümü" @click="selectedVersionFilter = ''"></v-list-item>
+          <v-list-item v-for="v in ['v1.0', 'v1.1', 'v2.0']" :key="v" :title="v" @click="selectedVersionFilter = v"></v-list-item>
+        </v-list>
+      </v-menu>
+
+      <!-- Epic Filtresi (Interactive) -->
+      <v-menu>
+        <template v-slot:activator="{ props }">
+          <v-btn
+            variant="outlined"
+            :color="selectedEpicFilter ? 'blue-darken-2' : 'grey-lighten-1'"
+            size="small"
+            class="text-capitalize text-grey-darken-3 font-weight-medium mr-1 flex-shrink-0"
+            v-bind="props"
+          >
+            Epic: {{ selectedEpicFilter || 'Tümü' }}
+            <v-icon size="14" class="ml-1">mdi-chevron-down</v-icon>
+          </v-btn>
+        </template>
+        <v-list density="compact">
+          <v-list-item title="Tümü" @click="selectedEpicFilter = ''"></v-list-item>
+          <v-list-item v-for="e in ['Kullanıcı Yönetimi', 'Kanban Panosu', 'Raporlama & CSV']" :key="e" :title="e" @click="selectedEpicFilter = e"></v-list-item>
+        </v-list>
+      </v-menu>
 
       <!-- Tip Filtresi (Interactive) -->
       <v-menu>
@@ -169,8 +203,10 @@
       </div>
     </div>
 
-    <!-- KANBAN PANOSU -->
-    <v-row class="px-2 flex-nowrap" style="overflow-x: auto; min-height: 80vh; padding-bottom: 24px;">
+    <!-- TABS CORRESPONDING VIEWS -->
+    
+    <!-- 1. KANBAN PANOSU VIEW -->
+    <v-row v-if="activeTab === 'Active sprints' || activeTab === 'Testing Board'" class="px-2 flex-nowrap" style="overflow-x: auto; min-height: 80vh; padding-bottom: 24px;">
       <!-- DINAMIK JIRA-STYLE KOLONLAR -->
       <v-col 
         v-for="col in columns" 
@@ -252,6 +288,159 @@
         </v-card>
       </v-col>
     </v-row>
+
+    <!-- 2. BACKLOG VIEW -->
+    <div v-else-if="activeTab === 'Backlog'" class="mb-6">
+      <v-card class="pa-4 rounded-lg border" elevation="0">
+        <div class="d-flex justify-space-between align-center mb-4">
+          <h3 class="text-h6 font-weight-bold text-grey-darken-3">Proje İş Listesi (Backlog)</h3>
+          <v-chip color="blue" size="small" class="font-weight-bold">Toplam Görev: {{ tasks.length }}</v-chip>
+        </div>
+        <v-list class="pa-0 border rounded-lg">
+          <v-list-item 
+            v-for="task in tasks" 
+            :key="task.id" 
+            class="border-bottom py-3 cursor-pointer hover-backlog"
+            @click="selectTask(task)"
+          >
+            <template v-slot:prepend>
+              <v-icon :icon="getTypeIcon(task.task_type)" :color="getTypeColor(task.task_type)" class="mr-3"></v-icon>
+            </template>
+            <v-list-item-title class="font-weight-bold text-indigo-darken-4">
+              TASK-{{ task.id }}: {{ task.title }}
+            </v-list-item-title>
+            <v-list-item-subtitle class="text-grey-darken-1 text-truncate mt-1" style="max-width: 600px;">
+              {{ task.definition }}
+            </v-list-item-subtitle>
+            <template v-slot:append>
+              <div class="d-flex align-center gap-2">
+                <v-chip size="x-small" :color="getPriorityColor(task.priority)" variant="tonal" class="font-weight-bold text-uppercase">
+                  {{ getPriorityLabel(task.priority) }}
+                </v-chip>
+                <v-chip size="x-small" color="indigo" variant="flat" class="font-weight-bold text-uppercase">
+                  {{ task.state.toUpperCase() }}
+                </v-chip>
+                <v-avatar color="indigo-lighten-4" size="26" class="text-caption font-weight-bold">
+                  {{ (task.assignee_username || 'US').substring(0,2).toUpperCase() }}
+                </v-avatar>
+              </div>
+            </template>
+          </v-list-item>
+        </v-list>
+      </v-card>
+    </div>
+
+    <!-- 3. SUMMARY VIEW -->
+    <div v-else-if="activeTab === 'Summary'" class="mb-6">
+      <v-row>
+        <!-- Durum Dağılım Kartları -->
+        <v-col cols="12" md="6">
+          <v-card class="pa-4 rounded-lg border h-100" elevation="0">
+            <h3 class="text-h6 font-weight-bold text-indigo-darken-4 mb-4">Görev Durum Dağılımı</h3>
+            <div class="d-flex flex-column gap-3">
+              <div v-for="col in columns" :key="col.key">
+                <div class="d-flex justify-space-between align-center text-body-2 font-weight-bold text-grey-darken-3 mb-1">
+                  <span>{{ col.title }}</span>
+                  <span>{{ tasks.filter(t => t.state === col.key).length }} Görev</span>
+                </div>
+                <v-progress-linear 
+                  :model-value="(tasks.filter(t => t.state === col.key).length / (tasks.length || 1)) * 100"
+                  :color="col.color"
+                  height="8"
+                  rounded
+                ></v-progress-linear>
+              </div>
+            </div>
+          </v-card>
+        </v-col>
+        <!-- Proje Bilgileri -->
+        <v-col cols="12" md="6">
+          <v-card class="pa-4 rounded-lg border h-100" elevation="0">
+            <h3 class="text-h6 font-weight-bold text-indigo-darken-4 mb-4">Proje Genel Metrikleri</h3>
+            <v-row>
+              <v-col cols="6">
+                <div class="bg-indigo-lighten-5 pa-4 rounded-lg text-center">
+                  <div class="text-h4 font-weight-bold text-indigo-darken-4">{{ tasks.filter(t => t.state === 'done').length }}</div>
+                  <div class="text-caption font-weight-bold text-grey-darken-2 mt-1">Tamamlanan</div>
+                </div>
+              </v-col>
+              <v-col cols="6">
+                <div class="bg-red-lighten-5 pa-4 rounded-lg text-center">
+                  <div class="text-h4 font-weight-bold text-red-darken-4">{{ tasks.filter(t => t.state.includes('blocked')).length }}</div>
+                  <div class="text-caption font-weight-bold text-grey-darken-2 mt-1">Engellenen (Blocked)</div>
+                </div>
+              </v-col>
+              <v-col cols="6">
+                <div class="bg-orange-lighten-5 pa-4 rounded-lg text-center">
+                  <div class="text-h4 font-weight-bold text-orange-darken-4">{{ tasks.filter(t => t.state.includes('test')).length }}</div>
+                  <div class="text-caption font-weight-bold text-grey-darken-2 mt-1">Test Aşamasında</div>
+                </div>
+              </v-col>
+              <v-col cols="6">
+                <div class="bg-grey-lighten-4 pa-4 rounded-lg text-center">
+                  <div class="text-h4 font-weight-bold text-grey-darken-4">{{ tasks.length }}</div>
+                  <div class="text-caption font-weight-bold text-grey-darken-2 mt-1">Toplam Görev</div>
+                </div>
+              </v-col>
+            </v-row>
+          </v-card>
+        </v-col>
+      </v-row>
+    </div>
+
+    <!-- 4. LIST VIEW -->
+    <div v-else-if="activeTab === 'List'" class="mb-6">
+      <v-card class="pa-4 rounded-lg border" elevation="0">
+        <v-table class="w-100">
+          <thead>
+            <tr>
+              <th class="text-left font-weight-bold text-grey-darken-2">Anahtar (Key)</th>
+              <th class="text-left font-weight-bold text-grey-darken-2">Başlık</th>
+              <th class="text-left font-weight-bold text-grey-darken-2">Görev Tipi</th>
+              <th class="text-left font-weight-bold text-grey-darken-2">Öncelik</th>
+              <th class="text-left font-weight-bold text-grey-darken-2">Durum</th>
+              <th class="text-left font-weight-bold text-grey-darken-2">Atanan Kişi</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr 
+              v-for="task in tasks" 
+              :key="task.id" 
+              class="cursor-pointer hover-table-row" 
+              @click="selectTask(task)"
+            >
+              <td class="font-weight-bold text-indigo">TASK-{{ task.id }}</td>
+              <td class="font-weight-bold text-indigo-darken-4">{{ task.title }}</td>
+              <td>
+                <div class="d-flex align-center gap-1">
+                   <v-icon :icon="getTypeIcon(task.task_type)" :color="getTypeColor(task.task_type)" size="16"></v-icon>
+                   <span class="text-caption font-weight-medium">{{ getTypeLabel(task.task_type) }}</span>
+                </div>
+              </td>
+              <td>
+                <div class="d-flex align-center gap-1">
+                   <v-icon :icon="getPriorityIcon(task.priority)" :color="getPriorityColor(task.priority)" size="16"></v-icon>
+                   <span class="text-caption font-weight-medium">{{ getPriorityLabel(task.priority) }}</span>
+                </div>
+              </td>
+              <td>
+                <v-chip size="x-small" color="blue" variant="flat" class="font-weight-bold">{{ task.state.toUpperCase() }}</v-chip>
+              </td>
+              <td class="font-weight-bold text-grey-darken-2">{{ task.assignee_username }}</td>
+            </tr>
+          </tbody>
+        </v-table>
+      </v-card>
+    </div>
+
+    <!-- 5. OTHERS PLACEHOLDER -->
+    <div v-else class="mb-6">
+      <v-card class="pa-10 text-center rounded-lg border" elevation="0">
+        <v-icon size="64" color="blue-grey-lighten-2" class="mb-4">mdi-clock-outline</v-icon>
+        <h3 class="text-h5 font-weight-bold text-grey-darken-3 mb-2">{{ activeTab }}</h3>
+        <p class="text-body-1 text-grey">Bu görünüm çok yakında GoJira projenize dahil edilecektir.</p>
+      </v-card>
+    </div>
 
     <!-- DETAY YAN PANELİ (RIGHT DRAWER) -->
     <v-navigation-drawer
@@ -406,6 +595,30 @@
               density="comfortable"
               @change="changeTaskDueDate(selectedTask.due_date)"
             ></v-text-field>
+          </v-col>
+
+          <!-- Epic Seçimi -->
+          <v-col cols="12" sm="6">
+            <v-select
+              v-model="selectedTask.epic"
+              :items="['Kullanıcı Yönetimi', 'Kanban Panosu', 'Raporlama & CSV']"
+              label="Epic"
+              variant="outlined"
+              density="comfortable"
+              @update:model-value="changeTaskEpic"
+            ></v-select>
+          </v-col>
+
+          <!-- Sürüm (Version) Seçimi -->
+          <v-col cols="12" sm="6">
+            <v-select
+              v-model="selectedTask.version"
+              :items="['v1.0', 'v1.1', 'v2.0']"
+              label="Sürüm (Version)"
+              variant="outlined"
+              density="comfortable"
+              @update:model-value="changeTaskVersion"
+            ></v-select>
           </v-col>
 
           <!-- Oluşturan ve Tarih Bilgisi -->
@@ -617,6 +830,28 @@
                   disabled
                 ></v-text-field>
               </v-col>
+
+              <!-- Epic Seçimi -->
+              <v-col cols="12" sm="6">
+                <v-select
+                  v-model="addForm.epic"
+                  :items="['Kullanıcı Yönetimi', 'Kanban Panosu', 'Raporlama & CSV']"
+                  label="Epic"
+                  variant="outlined"
+                  density="comfortable"
+                ></v-select>
+              </v-col>
+
+              <!-- Sürüm Seçimi -->
+              <v-col cols="12" sm="6">
+                <v-select
+                  v-model="addForm.version"
+                  :items="['v1.0', 'v1.1', 'v2.0']"
+                  label="Sürüm (Version)"
+                  variant="outlined"
+                  density="comfortable"
+                ></v-select>
+              </v-col>
             </v-row>
             <p class="text-caption text-grey-darken-1 mt-1">* işaretli alanlar zorunludur.</p>
           </v-form>
@@ -747,6 +982,9 @@ const selectedFilterUserId = ref(null)
 const selectedPriorityFilter = ref('')
 const selectedTypeFilter = ref('')
 const onlyMyTasksFilter = ref(false)
+const selectedVersionFilter = ref('')
+const selectedEpicFilter = ref('')
+const activeTab = ref('Active sprints')
 
 const typeOptions = [
   { value: 'task', title: 'Görev' },
@@ -851,6 +1089,14 @@ const getTasksByState = (stateKey) => {
 
   if (selectedPriorityFilter.value) {
     filtered = filtered.filter(t => t.priority === selectedPriorityFilter.value)
+  }
+
+  if (selectedVersionFilter.value) {
+    filtered = filtered.filter(t => t.version === selectedVersionFilter.value)
+  }
+
+  if (selectedEpicFilter.value) {
+    filtered = filtered.filter(t => t.epic === selectedEpicFilter.value)
   }
 
   return filtered
@@ -982,6 +1228,12 @@ const openAddDialog = () => {
     definition: '',
     state: 'to do',
     assignee: isStaff.value ? null : currentUserId.value,
+    priority: 'medium',
+    task_type: 'task',
+    duration: 0,
+    due_date: null,
+    epic: '',
+    version: ''
   }
   addDialog.value = true
 }
@@ -1116,6 +1368,34 @@ const changeTaskDueDate = async (val) => {
     }
   } catch (error) {
     console.error("Teslim tarihi güncellenemedi:", error)
+  }
+}
+
+const changeTaskEpic = async (val) => {
+  if (!selectedTask.value) return
+  try {
+    const id = selectedTask.value.id
+    await api.patch(`tasks/${id}/`, { epic: val || '' })
+    const index = tasks.value.findIndex(t => t.id === id)
+    if (index !== -1) {
+      tasks.value[index].epic = val || ''
+    }
+  } catch (error) {
+    console.error("Epic güncellenemedi:", error)
+  }
+}
+
+const changeTaskVersion = async (val) => {
+  if (!selectedTask.value) return
+  try {
+    const id = selectedTask.value.id
+    await api.patch(`tasks/${id}/`, { version: val || '' })
+    const index = tasks.value.findIndex(t => t.id === id)
+    if (index !== -1) {
+      tasks.value[index].version = val || ''
+    }
+  } catch (error) {
+    console.error("Sürüm güncellenemedi:", error)
   }
 }
 

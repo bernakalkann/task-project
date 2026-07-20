@@ -84,7 +84,9 @@ class Command(BaseCommand):
                 'priority': 'medium',
                 'task_type': 'task',
                 'duration': 12,
-                'due_date': '2026-08-01'
+                'due_date': '2026-08-01',
+                'epic': 'Kullanıcı Yönetimi',
+                'version': 'v1.0'
             }
         )
         if created:
@@ -101,7 +103,9 @@ class Command(BaseCommand):
                 'priority': 'high',
                 'task_type': 'task',
                 'duration': 8,
-                'due_date': '2026-07-25'
+                'due_date': '2026-07-25',
+                'epic': 'Kullanıcı Yönetimi',
+                'version': 'v1.0'
             }
         )
         if created:
@@ -131,7 +135,9 @@ class Command(BaseCommand):
                 'priority': 'low',
                 'task_type': 'story',
                 'duration': 24,
-                'due_date': '2026-07-15'
+                'due_date': '2026-07-15',
+                'epic': 'Kanban Panosu',
+                'version': 'v1.1'
             }
         )
         if created:
@@ -148,7 +154,9 @@ class Command(BaseCommand):
                 'priority': 'medium',
                 'task_type': 'task',
                 'duration': 4,
-                'due_date': '2026-07-28'
+                'due_date': '2026-07-28',
+                'epic': 'Kanban Panosu',
+                'version': 'v1.1'
             }
         )
         if created:
@@ -165,7 +173,9 @@ class Command(BaseCommand):
                 'priority': 'critical',
                 'task_type': 'bug',
                 'duration': 16,
-                'due_date': '2026-07-22'
+                'due_date': '2026-07-22',
+                'epic': 'Raporlama & CSV',
+                'version': 'v1.1'
             }
         )
         if created:
@@ -182,7 +192,9 @@ class Command(BaseCommand):
                 'priority': 'high',
                 'task_type': 'story',
                 'duration': 18,
-                'due_date': '2026-07-30'
+                'due_date': '2026-07-30',
+                'epic': 'Kullanıcı Yönetimi',
+                'version': 'v2.0'
             }
         )
         if created:
@@ -199,7 +211,9 @@ class Command(BaseCommand):
                 'priority': 'medium',
                 'task_type': 'task',
                 'duration': 6,
-                'due_date': '2026-07-27'
+                'due_date': '2026-07-27',
+                'epic': 'Kanban Panosu',
+                'version': 'v2.0'
             }
         )
         if created:
@@ -216,7 +230,9 @@ class Command(BaseCommand):
                 'priority': 'critical',
                 'task_type': 'bug',
                 'duration': 20,
-                'due_date': '2026-07-23'
+                'due_date': '2026-07-23',
+                'epic': 'Raporlama & CSV',
+                'version': 'v2.0'
             }
         )
         if created:

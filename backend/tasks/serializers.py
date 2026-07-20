@@ -38,7 +38,7 @@ class TaskSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Task
-        fields = ['id', 'title', 'definition', 'create_date', 'creator', 'creator_username', 'assignee', 'assignee_username', 'state', 'comments', 'priority', 'task_type', 'duration', 'due_date']
+        fields = ['id', 'title', 'definition', 'create_date', 'creator', 'creator_username', 'assignee', 'assignee_username', 'state', 'comments', 'priority', 'task_type', 'duration', 'due_date', 'epic', 'version']
         read_only_fields = ['creator'] # creator otomatik olarak atanacak, kullanıcı değiştiremez
 
     def validate_assignee(self, value):

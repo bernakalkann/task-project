@@ -1,37 +1,119 @@
 <!-- eslint-disable vue/valid-v-slot -->
 <template>
-  <v-container class="py-8" fluid>
-    <!-- Başlık ve Kontroller -->
-    <v-row class="mb-6 mx-2" align="center">
-      <v-col cols="12" sm="6">
-        <h1 class="text-h4 font-weight-bold text-indigo-darken-4">
-          <v-icon icon="mdi-clipboard-text-multiple" class="mr-2" color="indigo"></v-icon>
-          Görev Panosu (Kanban)
+  <v-container class="py-6 px-6" fluid>
+    <!-- JIRA STYLE UST KONTROLLER (BREADCRUMBS, TITLE, SUB-NAV, FILTERS) -->
+    
+    <!-- Breadcrumbs -->
+    <div class="text-caption text-grey-darken-1 mb-1 px-2" style="font-family: sans-serif;">
+      Spaces / MSSP
+    </div>
+
+    <!-- Proje Başlığı ve Aksiyonlar -->
+    <v-row class="mb-4 mx-2 align-center">
+      <v-col cols="12" sm="6" class="d-flex align-center">
+        <h1 class="text-h4 font-weight-bold text-grey-darken-4 mr-3" style="font-family: sans-serif;">
+          MSP board
         </h1>
-        <p class="text-subtitle-1 text-grey-darken-1">Görevlerinizi sütunlar arasında sürükleyin, detayları inceleyin ve yorum yapın.</p>
+        <v-btn icon variant="text" size="small" color="grey-darken-1" class="rounded-lg mr-2" title="Takım Rolleri"><v-icon>mdi-account-group-outline</v-icon></v-btn>
+        <v-btn icon variant="text" size="small" color="grey-darken-1" class="rounded-lg" title="Yıldızla"><v-icon>mdi-star-outline</v-icon></v-btn>
       </v-col>
       
-      <!-- Görev Ekle ve Excel Dışa Aktar Butonları -->
+      <!-- Aksiyon Butonları -->
       <v-col cols="12" sm="6" class="text-sm-right d-flex justify-sm-end gap-2 align-center">
+        <v-btn icon variant="text" size="small" color="grey-darken-2" title="Paylaş"><v-icon>mdi-share-variant-outline</v-icon></v-btn>
+        <v-btn icon variant="text" size="small" color="grey-darken-2" title="Genişlet"><v-icon>mdi-fullscreen</v-icon></v-btn>
         <v-btn
-          color="success-darken-1"
+          color="success"
           prepend-icon="mdi-microsoft-excel"
-          size="large"
-          elevation="2"
+          variant="outlined"
+          size="small"
+          class="text-capitalize font-weight-bold ml-2"
           :loading="exporting"
           @click="exportTasks"
         >
           Excel Dışa Aktar
         </v-btn>
         <v-btn
-          color="indigo-darken-2"
+          color="blue-darken-2"
           prepend-icon="mdi-plus"
-          size="large"
-          elevation="2"
+          variant="flat"
+          size="small"
+          class="text-capitalize font-weight-bold"
           @click="openAddDialog"
         >
           Yeni Görev Ekle
         </v-btn>
+      </v-col>
+    </v-row>
+
+    <!-- Sub-navigation Tabs -->
+    <div class="mx-2 mb-4 d-flex align-center border-bottom pb-1 overflow-x-auto" style="gap: 20px; font-family: sans-serif;">
+      <span class="tab-item text-body-2 font-weight-medium text-grey-darken-1 pb-2">Testing Board</span>
+      <span class="tab-item active-tab text-body-2 font-weight-bold text-blue-darken-2 pb-2">Active sprints</span>
+      <span class="tab-item text-body-2 font-weight-medium text-grey-darken-1 pb-2">Backlog</span>
+      <span class="tab-item text-body-2 font-weight-medium text-grey-darken-1 pb-2">Releases</span>
+      <span class="tab-item text-body-2 font-weight-medium text-grey-darken-1 pb-2">Summary</span>
+      <span class="tab-item text-body-2 font-weight-medium text-grey-darken-1 pb-2">Timeline</span>
+      <span class="tab-item text-body-2 font-weight-medium text-grey-darken-1 pb-2">Calendar</span>
+      <span class="tab-item text-body-2 font-weight-medium text-grey-darken-1 pb-2">Reports</span>
+      <span class="tab-item text-body-2 font-weight-medium text-grey-darken-1 pb-2">List</span>
+      <span class="tab-item text-body-2 font-weight-medium text-grey-darken-1 pb-2">Issues</span>
+    </div>
+
+    <!-- Filtre Araç Çubuğu (Filters Toolbar) -->
+    <v-row class="mb-6 mx-2 align-center">
+      <!-- Arama ve Kullanıcı Avatarları -->
+      <v-col cols="12" md="8" class="d-flex align-center flex-wrap gap-3">
+        <div style="width: 200px;">
+          <v-text-field
+            v-model="searchQuery"
+            placeholder="Panoda ara..."
+            variant="outlined"
+            density="compact"
+            hide-details
+            prepend-inner-icon="mdi-magnify"
+          ></v-text-field>
+        </div>
+
+        <!-- Atanan Kullanıcılar Avatar Listesi (Filtreleme için) -->
+        <div class="d-flex align-center mr-2">
+          <v-avatar 
+            v-for="user in usersList.slice(0, 5)" 
+            :key="user.id" 
+            :color="selectedFilterUserId === user.id ? 'blue-darken-2' : 'indigo-lighten-4'" 
+            :class="['cursor-pointer hover-avatar mr-n2 elevation-1', {'active-avatar-filter': selectedFilterUserId === user.id}]" 
+            size="30"
+            @click="toggleUserFilter(user.id)"
+            :title="`${user.username} filtrele`"
+          >
+            <span class="text-caption font-weight-bold">{{ user.username.substring(0,2).toUpperCase() }}</span>
+          </v-avatar>
+          
+          <v-avatar 
+            v-if="selectedFilterUserId !== null" 
+            color="red-lighten-4" 
+            class="cursor-pointer ml-3" 
+            size="26"
+            @click="clearUserFilter"
+            title="Filtreyi Temizle"
+          >
+            <v-icon size="16" color="red">mdi-close</v-icon>
+          </v-avatar>
+        </div>
+
+        <!-- Filtre Açılır Kutuları (Mockup Görseli) -->
+        <v-btn variant="outlined" size="small" class="text-capitalize text-grey-darken-3 font-weight-medium mr-1" color="grey-lighten-1">Version <v-icon size="14" class="ml-1">mdi-chevron-down</v-icon></v-btn>
+        <v-btn variant="outlined" size="small" class="text-capitalize text-grey-darken-3 font-weight-medium mr-1" color="grey-lighten-1">Epic <v-icon size="14" class="ml-1">mdi-chevron-down</v-icon></v-btn>
+        <v-btn variant="outlined" size="small" class="text-capitalize text-grey-darken-3 font-weight-medium mr-1" color="grey-lighten-1">Type <v-icon size="14" class="ml-1">mdi-chevron-down</v-icon></v-btn>
+        <v-btn variant="outlined" size="small" class="text-capitalize text-grey-darken-3 font-weight-medium mr-1" color="grey-lighten-1">Label <v-icon size="14" class="ml-1">mdi-chevron-down</v-icon></v-btn>
+        <v-btn variant="outlined" size="small" class="text-capitalize text-grey-darken-3 font-weight-medium" color="grey-lighten-1">Quick filters <v-icon size="14" class="ml-1">mdi-chevron-down</v-icon></v-btn>
+      </v-col>
+
+      <!-- Sağ Taraf Tasarım Görünümleri -->
+      <v-col cols="12" md="4" class="text-md-right d-flex justify-md-end align-center gap-2">
+        <v-btn icon variant="text" size="small" color="grey-darken-2"><v-icon>mdi-chart-bar</v-icon></v-btn>
+        <v-btn icon variant="text" size="small" color="grey-darken-2"><v-icon>mdi-tune-variant</v-icon></v-btn>
+        <v-btn icon variant="text" size="small" color="grey-darken-2"><v-icon>mdi-dots-horizontal</v-icon></v-btn>
       </v-col>
     </v-row>
 
@@ -492,8 +574,38 @@ const columns = [
   { key: 'done', title: 'DONE', color: 'green-darken-3', icon: 'mdi-check-circle-outline', bgClass: 'bg-green-lighten-5' }
 ]
 
+const searchQuery = ref('')
+const selectedFilterUserId = ref(null)
+
+const toggleUserFilter = (userId) => {
+  if (selectedFilterUserId.value === userId) {
+    selectedFilterUserId.value = null
+  } else {
+    selectedFilterUserId.value = userId
+  }
+}
+
+const clearUserFilter = () => {
+  selectedFilterUserId.value = null
+}
+
 const getTasksByState = (stateKey) => {
-  return tasks.value.filter(t => t.state === stateKey)
+  let filtered = tasks.value.filter(t => t.state === stateKey)
+  
+  if (searchQuery.value) {
+    const q = searchQuery.value.toLowerCase()
+    filtered = filtered.filter(t => 
+      t.title.toLowerCase().includes(q) || 
+      t.definition.toLowerCase().includes(q) ||
+      (t.assignee_username && t.assignee_username.toLowerCase().includes(q))
+    )
+  }
+
+  if (selectedFilterUserId.value !== null) {
+    filtered = filtered.filter(t => t.assignee === selectedFilterUserId.value)
+  }
+
+  return filtered
 }
 
 const getCardBorderClass = (stateKey) => {
@@ -917,4 +1029,27 @@ onMounted(() => {
 .border-orange-left { border-left: 4px solid #ff9800 !important; }
 .border-indigo-left { border-left: 4px solid #3f51b5 !important; }
 .border-green-left { border-left: 4px solid #4caf50 !important; }
+.tab-item {
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tab-item:hover {
+  color: #1976d2 !important;
+}
+.active-tab {
+  border-bottom: 2px solid #1976d2 !important;
+}
+.hover-avatar {
+  border: 2px solid white;
+  transition: transform 0.2s ease, z-index 0.2s ease;
+}
+.hover-avatar:hover {
+  transform: translateY(-4px) scale(1.1);
+  z-index: 10 !important;
+}
+.active-avatar-filter {
+  border: 2.5px solid #1976d2 !important;
+  transform: translateY(-2px) scale(1.05);
+}
 </style>

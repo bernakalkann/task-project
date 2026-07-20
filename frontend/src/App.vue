@@ -24,22 +24,59 @@
       </v-list>
     </v-navigation-drawer>
 
-    <!-- Top Bar -->
-    <v-app-bar v-if="isLoggedIn" app color="surface" elevation="1">
-      <v-app-bar-nav-icon @click="drawer = !drawer"></v-app-bar-nav-icon>
-      <v-app-bar-title class="font-weight-medium">Panel</v-app-bar-title>
-      <v-spacer></v-spacer>
+    <!-- Top Bar (Jira Style) -->
+    <v-app-bar v-if="isLoggedIn" app color="surface" elevation="0" border class="px-3">
+      <!-- Nine Dots App Switcher -->
+      <v-btn icon variant="text" color="grey-darken-2" class="mr-1">
+        <v-icon size="24">mdi-apps</v-icon>
+      </v-btn>
+      
+      <!-- Jira Logo & Brand -->
+      <div class="d-flex align-center cursor-pointer mr-6" @click="router.push('/')">
+        <v-icon color="blue-darken-2" size="28" class="mr-2">mdi-jira</v-icon>
+        <span class="font-weight-black text-body-1 text-grey-darken-3 tracking-wide" style="font-family: sans-serif;">Jira</span>
+      </div>
 
-      <!-- Bildirim Menüsü -->
+      <!-- Left Links -->
+      <v-btn variant="text" class="text-capitalize text-grey-darken-3 font-weight-medium px-2 mr-2 d-none d-md-flex" size="small">Çalışma Alanları <v-icon size="16">mdi-chevron-down</v-icon></v-btn>
+      <v-btn variant="text" class="text-capitalize text-grey-darken-3 font-weight-medium px-2 mr-2 d-none d-md-flex" size="small">Projeler <v-icon size="16">mdi-chevron-down</v-icon></v-btn>
+      <v-btn variant="text" class="text-capitalize text-grey-darken-3 font-weight-medium px-2 mr-2 d-none d-md-flex" size="small">Filtreler <v-icon size="16">mdi-chevron-down</v-icon></v-btn>
+      <v-btn variant="text" class="text-capitalize text-grey-darken-3 font-weight-medium px-2 mr-6 d-none d-md-flex" size="small">Panolar <v-icon size="16">mdi-chevron-down</v-icon></v-btn>
+
+      <!-- Create Button -->
+      <v-btn color="blue-darken-2" variant="flat" size="small" class="text-capitalize font-weight-bold px-4 mr-4" rounded="sm" @click="triggerGlobalCreate">
+        Oluştur
+      </v-btn>
+
+      <!-- Search Bar -->
+      <div style="width: 220px;" class="mr-auto d-none d-lg-block">
+        <v-text-field
+          placeholder="Ara..."
+          variant="outlined"
+          density="compact"
+          hide-details
+          prepend-inner-icon="mdi-magnify"
+          style="max-height: 40px;"
+        ></v-text-field>
+      </div>
+
+      <v-spacer class="d-lg-none"></v-spacer>
+
+      <!-- Ask Rovo Button -->
+      <v-btn variant="outlined" color="blue" size="small" class="text-capitalize font-weight-bold mr-3 d-none d-sm-flex" prepend-icon="mdi-robot-outline" rounded="sm">
+        Ask Rovo
+      </v-btn>
+
+      <!-- Notification Badge & Menu -->
       <v-menu location="bottom end" :close-on-content-click="false">
         <template v-slot:activator="{ props }">
-          <v-btn icon class="mr-2" v-bind="props">
-            <v-badge :content="unreadCount" color="error" :model-value="unreadCount > 0">
-              <v-icon>mdi-bell</v-icon>
+          <v-btn icon variant="text" color="grey-darken-2" class="mr-1" v-bind="props">
+            <v-badge :content="unreadCount" color="error" :model-value="unreadCount > 0" dot>
+              <v-icon size="22">mdi-bell-outline</v-icon>
             </v-badge>
           </v-btn>
         </template>
-        <v-card width="300" max-height="400" class="overflow-y-auto">
+        <v-card width="300" max-height="400" class="overflow-y-auto rounded-lg" border>
           <v-list>
             <v-list-subheader>Bildirimler</v-list-subheader>
             <v-divider></v-divider>
@@ -59,16 +96,34 @@
         </v-card>
       </v-menu>
 
-      <v-chip class="mr-4" color="indigo" variant="outlined" prepend-icon="mdi-account">
-        {{ username }}
-      </v-chip>
-
-      <v-btn icon class="mr-2" color="indigo-darken-1" @click="toggleTheme">
-        <v-icon>{{ currentTheme === 'dark' ? 'mdi-weather-sunny' : 'mdi-weather-night' }}</v-icon>
+      <!-- Help Icon -->
+      <v-btn icon variant="text" color="grey-darken-2" class="mr-1 d-none d-sm-flex">
+        <v-icon size="22">mdi-help-circle-outline</v-icon>
       </v-btn>
 
-      <v-btn icon color="red-darken-1" class="mr-2" @click="logout">
-        <v-icon>mdi-logout</v-icon>
+      <!-- Settings Icon -->
+      <v-btn icon variant="text" color="grey-darken-2" class="mr-1 d-none d-sm-flex">
+        <v-icon size="22">mdi-cog-outline</v-icon>
+      </v-btn>
+
+      <!-- Theme Switcher -->
+      <v-btn icon variant="text" color="grey-darken-2" class="mr-2" @click="toggleTheme">
+        <v-icon size="22">{{ currentTheme === 'dark' ? 'mdi-weather-sunny' : 'mdi-weather-night' }}</v-icon>
+      </v-btn>
+
+      <!-- Logout -->
+      <v-btn icon variant="text" color="red-darken-1" class="mr-2" @click="logout" title="Çıkış Yap">
+        <v-icon size="22">mdi-logout</v-icon>
+      </v-btn>
+
+      <!-- User Avatar / Initials -->
+      <v-avatar color="indigo-darken-2" size="32" class="cursor-pointer font-weight-bold elevation-1 mr-2" @click="router.push('/profile')">
+        {{ username.substring(0, 2).toUpperCase() }}
+      </v-avatar>
+
+      <!-- Sol Çekmeceyi Açıp Kapatma Butonu (Aesthetics) -->
+      <v-btn icon variant="text" color="grey-darken-2" @click="drawer = !drawer">
+        <v-icon size="22">mdi-menu</v-icon>
       </v-btn>
     </v-app-bar>
 
@@ -147,5 +202,13 @@ const logout = () => {
   isLoggedIn.value = false
   router.push('/login')
   window.location.reload()
+}
+
+const triggerGlobalCreate = () => {
+  if (route.path === '/tasks') {
+    window.dispatchEvent(new CustomEvent('open-create-task'))
+  } else {
+    router.push({ path: '/tasks', query: { create: 'true' } })
+  }
 }
 </script>

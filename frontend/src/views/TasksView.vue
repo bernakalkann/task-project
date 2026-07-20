@@ -39,7 +39,14 @@
     <v-row class="px-2">
       <!-- TODO KOLONU -->
       <v-col cols="12" md="4">
-        <v-card :class="currentTheme === 'dark' ? 'bg-grey-darken-4' : 'bg-grey-lighten-3'" class="pa-3 column-card" elevation="0">
+        <v-card 
+          :class="[currentTheme === 'dark' ? 'bg-grey-darken-4' : 'bg-grey-lighten-3', {'drag-over-active': activeDragOverColumn === 'to do'}]" 
+          class="pa-3 column-card" 
+          elevation="0"
+          @dragover.prevent="activeDragOverColumn = 'to do'"
+          @dragleave="activeDragOverColumn = null"
+          @drop="onDrop($event, 'to do')"
+        >
           <div class="d-flex justify-space-between align-center mb-4 px-2">
             <span class="font-weight-bold text-uppercase text-grey-darken-2 tracking-wider">
               TODO (Yapılacaklar)
@@ -57,6 +64,8 @@
               :key="task.id"
               class="mb-3 task-card cursor-pointer"
               elevation="1"
+              draggable="true"
+              @dragstart="onDragStart($event, task)"
               @click="selectTask(task)"
             >
               <v-card-text class="pa-4">
@@ -85,7 +94,14 @@
 
       <!-- IN PROGRESS KOLONU -->
       <v-col cols="12" md="4">
-        <v-card :class="currentTheme === 'dark' ? 'bg-blue-darken-4' : 'bg-blue-lighten-5'" class="pa-3 column-card" elevation="0">
+        <v-card 
+          :class="[currentTheme === 'dark' ? 'bg-blue-darken-4' : 'bg-blue-lighten-5', {'drag-over-active': activeDragOverColumn === 'in progress'}]" 
+          class="pa-3 column-card" 
+          elevation="0"
+          @dragover.prevent="activeDragOverColumn = 'in progress'"
+          @dragleave="activeDragOverColumn = null"
+          @drop="onDrop($event, 'in progress')"
+        >
           <div class="d-flex justify-space-between align-center mb-4 px-2">
             <span class="font-weight-bold text-uppercase text-blue-darken-3 tracking-wider">
               IN PROGRESS (İşlemde)
@@ -103,6 +119,8 @@
               :key="task.id"
               class="mb-3 task-card cursor-pointer border-blue-left"
               elevation="1"
+              draggable="true"
+              @dragstart="onDragStart($event, task)"
               @click="selectTask(task)"
             >
               <v-card-text class="pa-4">
@@ -131,7 +149,14 @@
 
       <!-- DONE KOLONU -->
       <v-col cols="12" md="4">
-        <v-card :class="currentTheme === 'dark' ? 'bg-green-darken-4' : 'bg-green-lighten-5'" class="pa-3 column-card" elevation="0">
+        <v-card 
+          :class="[currentTheme === 'dark' ? 'bg-green-darken-4' : 'bg-green-lighten-5', {'drag-over-active': activeDragOverColumn === 'done'}]" 
+          class="pa-3 column-card" 
+          elevation="0"
+          @dragover.prevent="activeDragOverColumn = 'done'"
+          @dragleave="activeDragOverColumn = null"
+          @drop="onDrop($event, 'done')"
+        >
           <div class="d-flex justify-space-between align-center mb-4 px-2">
             <span class="font-weight-bold text-uppercase text-green-darken-3 tracking-wider">
               DONE (Tamamlandı)
@@ -149,6 +174,8 @@
               :key="task.id"
               class="mb-3 task-card cursor-pointer border-green-left"
               elevation="1"
+              draggable="true"
+              @dragstart="onDragStart($event, task)"
               @click="selectTask(task)"
             >
               <v-card-text class="pa-4">
@@ -565,6 +592,36 @@ const fetchTasks = async () => {
 }
 
 const exporting = ref(false)
+const activeDragOverColumn = ref(null)
+
+const onDragStart = (event, task) => {
+  event.dataTransfer.setData('text/plain', String(task.id))
+  event.dataTransfer.effectAllowed = 'move'
+}
+
+const onDrop = async (event, newState) => {
+  activeDragOverColumn.value = null
+  const taskId = parseInt(event.dataTransfer.getData('text/plain'))
+  if (isNaN(taskId)) return
+
+  const task = tasks.value.find(t => t.id === taskId)
+  if (!task) return
+
+  if (task.state === newState) return
+
+  // Arayüzde anında güncel görünmesi için (Optimistic UI update)
+  const oldState = task.state
+  task.state = newState
+
+  try {
+    await api.patch(`tasks/${taskId}/`, { state: newState })
+    console.log("Görev sürüklenerek başarıyla taşındı.")
+  } catch (error) {
+    console.error("Görev taşınırken hata oluştu:", error)
+    task.state = oldState // Hata halinde geri al
+    alert("Görev taşınırken bir hata oluştu.")
+  }
+}
 
 const exportTasks = async () => {
   exporting.value = true
@@ -918,5 +975,10 @@ onMounted(() => {
 }
 .italic {
   font-style: italic;
+}
+.drag-over-active {
+  background-color: rgba(63, 81, 181, 0.15) !important;
+  outline: 2px dashed #3f51b5 !important;
+  transition: all 0.2s ease;
 }
 </style>

@@ -34,7 +34,7 @@
       <!-- Jira Logo & Brand -->
       <div class="d-flex align-center cursor-pointer mr-6" @click="router.push('/')">
         <v-icon color="blue-darken-2" size="28" class="mr-2">mdi-jira</v-icon>
-        <span class="font-weight-black text-body-1 text-grey-darken-3 tracking-wide" style="font-family: sans-serif;">Jira</span>
+        <span class="font-weight-black text-body-1 text-grey-darken-3 tracking-wide" style="font-family: sans-serif;">GoJira</span>
       </div>
 
       <!-- Left Links -->

@@ -53,11 +53,7 @@ class TaskViewSet(viewsets.ModelViewSet):
         else:
             tasks = Task.objects.filter(assignee=request.user)
         
-        data = {
-            'todo': tasks.filter(state='to do').count(),
-            'in_progress': tasks.filter(state='in progress').count(),
-            'done': tasks.filter(state='done').count(),
-        }
+        data = {choice[0]: tasks.filter(state=choice[0]).count() for choice in Task.STATE_CHOICES}
         return Response(data)
 
     # Excel (CSV) olarak dışa aktar

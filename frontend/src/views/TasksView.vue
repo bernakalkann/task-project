@@ -32,173 +32,73 @@
         >
           Yeni Görev Ekle
         </v-btn>
-      </v-col>
-    </v-row>
-
-    <!-- KANBAN PANOSU -->
-    <v-row class="px-2">
-      <!-- TODO KOLONU -->
-      <v-col cols="12" md="4">
+      </v-co    <!-- KANBAN PANOSU -->
+    <v-row class="px-2 flex-nowrap" style="overflow-x: auto; min-height: 80vh; padding-bottom: 24px;">
+      <!-- DINAMIK JIRA-STYLE KOLONLAR -->
+      <v-col 
+        v-for="col in columns" 
+        :key="col.key" 
+        cols="12" 
+        sm="6" 
+        md="3" 
+        style="min-width: 320px;" 
+        class="d-flex"
+      >
         <v-card 
-          :class="[currentTheme === 'dark' ? 'bg-grey-darken-4' : 'bg-grey-lighten-3', {'drag-over-active': activeDragOverColumn === 'to do'}]" 
-          class="pa-3 column-card" 
+          :class="[currentTheme === 'dark' ? 'bg-grey-darken-4' : col.bgClass, {'drag-over-active': activeDragOverColumn === col.key}]" 
+          class="pa-3 column-card w-100 d-flex flex-column" 
           elevation="0"
-          @dragover.prevent="activeDragOverColumn = 'to do'"
+          @dragover.prevent="activeDragOverColumn = col.key"
           @dragleave="activeDragOverColumn = null"
-          @drop="onDrop($event, 'to do')"
+          @drop="onDrop($event, col.key)"
         >
+          <!-- Kolon Başlığı -->
           <div class="d-flex justify-space-between align-center mb-4 px-2">
-            <span class="font-weight-bold text-uppercase text-grey-darken-2 tracking-wider">
-              TODO (Yapılacaklar)
+            <span :class="`text-${col.color}`" class="font-weight-bold text-uppercase tracking-wider text-body-2">
+              <v-icon :icon="col.icon" class="mr-1" size="small"></v-icon>
+              {{ col.title }}
             </span>
-            <v-chip color="grey-darken-2" size="small" variant="flat" class="font-weight-bold">
-              {{ todoTasks.length }}
+            <v-chip :color="col.color" size="small" variant="flat" class="font-weight-bold">
+              {{ getTasksByState(col.key).length }}
             </v-chip>
           </div>
           
           <v-divider class="mb-3 border-opacity-25"></v-divider>
 
-          <v-scroll-y-transition group>
-            <v-card
-              v-for="task in todoTasks"
-              :key="task.id"
-              class="mb-3 task-card cursor-pointer"
-              elevation="1"
-              draggable="true"
-              @dragstart="onDragStart($event, task)"
-              @click="selectTask(task)"
-            >
-              <v-card-text class="pa-4">
-                <div class="d-flex justify-space-between align-center mb-2">
-                  <span class="text-caption font-weight-bold text-indigo-darken-1">TASK-{{ task.id }}</span>
-                  <v-chip color="grey" size="x-small" variant="tonal" class="font-weight-bold text-uppercase">
-                    TODO
-                  </v-chip>
-                </div>
-                <h3 class="text-subtitle-1 font-weight-bold mb-2 text-indigo-darken-4">{{ task.title }}</h3>
-                <p class="text-body-2 text-grey-darken-1 text-truncate mb-3">{{ task.definition }}</p>
-                
-                <div class="d-flex align-center justify-space-between mt-2 pt-2 border-top">
-                  <span class="text-caption text-grey-darken-1">
-                    Atanan: <strong>{{ task.assignee_username || getAssigneeName(task.assignee) }}</strong>
-                  </span>
-                  <v-avatar color="indigo-lighten-4" size="24" class="text-caption font-weight-bold">
-                    {{ (task.assignee_username || getAssigneeName(task.assignee)).substring(0,2).toUpperCase() }}
-                  </v-avatar>
-                </div>
-              </v-card-text>
-            </v-card>
-          </v-scroll-y-transition>
-        </v-card>
-      </v-col>
-
-      <!-- IN PROGRESS KOLONU -->
-      <v-col cols="12" md="4">
-        <v-card 
-          :class="[currentTheme === 'dark' ? 'bg-blue-darken-4' : 'bg-blue-lighten-5', {'drag-over-active': activeDragOverColumn === 'in progress'}]" 
-          class="pa-3 column-card" 
-          elevation="0"
-          @dragover.prevent="activeDragOverColumn = 'in progress'"
-          @dragleave="activeDragOverColumn = null"
-          @drop="onDrop($event, 'in progress')"
-        >
-          <div class="d-flex justify-space-between align-center mb-4 px-2">
-            <span class="font-weight-bold text-uppercase text-blue-darken-3 tracking-wider">
-              IN PROGRESS (İşlemde)
-            </span>
-            <v-chip color="blue" size="small" variant="flat" class="font-weight-bold">
-              {{ inProgressTasks.length }}
-            </v-chip>
+          <!-- Kolon İçindeki Görevler Listesi (Kendi içinde kaydırılabilir) -->
+          <div class="flex-grow-1 overflow-y-auto pr-1" style="max-height: 65vh;">
+            <v-scroll-y-transition group>
+              <v-card
+                v-for="task in getTasksByState(col.key)"
+                :key="task.id"
+                :class="['mb-3 task-card cursor-pointer', getCardBorderClass(task.state)]"
+                elevation="1"
+                draggable="true"
+                @dragstart="onDragStart($event, task)"
+                @click="selectTask(task)"
+              >
+                <v-card-text class="pa-4">
+                  <div class="d-flex justify-space-between align-center mb-2">
+                    <span class="text-caption font-weight-bold text-indigo-darken-1">TASK-{{ task.id }}</span>
+                    <v-chip :color="col.color" size="x-small" variant="tonal" class="font-weight-bold text-uppercase">
+                      {{ col.title }}
+                    </v-chip>
+                  </div>
+                  <h3 class="text-subtitle-1 font-weight-bold mb-2 text-indigo-darken-4 text-truncate">{{ task.title }}</h3>
+                  <p class="text-body-2 text-grey-darken-1 text-truncate mb-3">{{ task.definition }}</p>
+                  
+                  <div class="d-flex align-center justify-space-between mt-2 pt-2 border-top">
+                    <span class="text-caption text-grey-darken-1">
+                      Atanan: <strong>{{ task.assignee_username }}</strong>
+                    </span>
+                    <v-avatar color="indigo-lighten-4" size="24" class="text-caption font-weight-bold">
+                      {{ (task.assignee_username || '').substring(0,2).toUpperCase() }}
+                    </v-avatar>
+                  </div>
+                </v-card-text>
+              </v-card>
+            </v-scroll-y-transition>
           </div>
-          
-          <v-divider class="mb-3 border-opacity-25"></v-divider>
-
-          <v-scroll-y-transition group>
-            <v-card
-              v-for="task in inProgressTasks"
-              :key="task.id"
-              class="mb-3 task-card cursor-pointer border-blue-left"
-              elevation="1"
-              draggable="true"
-              @dragstart="onDragStart($event, task)"
-              @click="selectTask(task)"
-            >
-              <v-card-text class="pa-4">
-                <div class="d-flex justify-space-between align-center mb-2">
-                  <span class="text-caption font-weight-bold text-blue-darken-3">TASK-{{ task.id }}</span>
-                  <v-chip color="blue" size="x-small" variant="tonal" class="font-weight-bold text-uppercase">
-                    PROGRESS
-                  </v-chip>
-                </div>
-                <h3 class="text-subtitle-1 font-weight-bold mb-2 text-indigo-darken-4">{{ task.title }}</h3>
-                <p class="text-body-2 text-grey-darken-1 text-truncate mb-3">{{ task.definition }}</p>
-                
-                <div class="d-flex align-center justify-space-between mt-2 pt-2 border-top">
-                  <span class="text-caption text-grey-darken-1">
-                    Atanan: <strong>{{ task.assignee_username || getAssigneeName(task.assignee) }}</strong>
-                  </span>
-                  <v-avatar color="blue-lighten-4" size="24" class="text-caption font-weight-bold text-blue-darken-4">
-                    {{ (task.assignee_username || getAssigneeName(task.assignee)).substring(0,2).toUpperCase() }}
-                  </v-avatar>
-                </div>
-              </v-card-text>
-            </v-card>
-          </v-scroll-y-transition>
-        </v-card>
-      </v-col>
-
-      <!-- DONE KOLONU -->
-      <v-col cols="12" md="4">
-        <v-card 
-          :class="[currentTheme === 'dark' ? 'bg-green-darken-4' : 'bg-green-lighten-5', {'drag-over-active': activeDragOverColumn === 'done'}]" 
-          class="pa-3 column-card" 
-          elevation="0"
-          @dragover.prevent="activeDragOverColumn = 'done'"
-          @dragleave="activeDragOverColumn = null"
-          @drop="onDrop($event, 'done')"
-        >
-          <div class="d-flex justify-space-between align-center mb-4 px-2">
-            <span class="font-weight-bold text-uppercase text-green-darken-3 tracking-wider">
-              DONE (Tamamlandı)
-            </span>
-            <v-chip color="green" size="small" variant="flat" class="font-weight-bold">
-              {{ doneTasks.length }}
-            </v-chip>
-          </div>
-          
-          <v-divider class="mb-3 border-opacity-25"></v-divider>
-
-          <v-scroll-y-transition group>
-            <v-card
-              v-for="task in doneTasks"
-              :key="task.id"
-              class="mb-3 task-card cursor-pointer border-green-left"
-              elevation="1"
-              draggable="true"
-              @dragstart="onDragStart($event, task)"
-              @click="selectTask(task)"
-            >
-              <v-card-text class="pa-4">
-                <div class="d-flex justify-space-between align-center mb-2">
-                  <span class="text-caption font-weight-bold text-green-darken-3">TASK-{{ task.id }}</span>
-                  <v-chip color="green" size="x-small" variant="tonal" class="font-weight-bold text-uppercase">
-                    DONE
-                  </v-chip>
-                </div>
-                <h3 class="text-subtitle-1 font-weight-bold mb-2 text-indigo-darken-4">{{ task.title }}</h3>
-                <p class="text-body-2 text-grey-darken-1 text-truncate mb-3">{{ task.definition }}</p>
-                
-                <div class="d-flex align-center justify-space-between mt-2 pt-2 border-top">
-                  <span class="text-caption text-grey-darken-1 text-decoration-line-through">
-                    Atanan: <strong>{{ task.assignee_username || getAssigneeName(task.assignee) }}</strong>
-                  </span>
-                  <v-avatar color="green-lighten-4" size="24" class="text-caption font-weight-bold text-green-darken-4">
-                    {{ (task.assignee_username || getAssigneeName(task.assignee)).substring(0,2).toUpperCase() }}
-                  </v-avatar>
-                </div>
-              </v-card-text>
-            </v-card>
-          </v-scroll-y-transition>
         </v-card>
       </v-col>
     </v-row>
@@ -568,15 +468,41 @@ const commentDeleting = ref(false)
 
 // Durum (State) Seçenekleri
 const stateItems = [
-  { value: 'to do', title: 'TODO' },
+  { value: 'to do', title: 'TO DO' },
   { value: 'in progress', title: 'IN PROGRESS' },
-  { value: 'done', title: 'DONE' },
+  { value: 'in code review', title: 'IN CODE REVIEW' },
+  { value: 'blocked dev', title: 'BLOCKED (DEV)' },
+  { value: 'ready for test', title: 'READY FOR TEST' },
+  { value: 'in test', title: 'IN TEST' },
+  { value: 'blocked test', title: 'BLOCKED (TEST)' },
+  { value: 'done', title: 'DONE' }
 ]
 
-// Sütun gruplarını hesapla
-const todoTasks = computed(() => tasks.value.filter(t => t.state === 'to do'))
-const inProgressTasks = computed(() => tasks.value.filter(t => t.state === 'in progress'))
-const doneTasks = computed(() => tasks.value.filter(t => t.state === 'done'))
+const columns = [
+  { key: 'to do', title: 'TO DO', color: 'grey-darken-2', icon: 'mdi-clipboard-outline', bgClass: 'bg-grey-lighten-3' },
+  { key: 'in progress', title: 'IN PROGRESS', color: 'blue-darken-3', icon: 'mdi-progress-clock', bgClass: 'bg-blue-lighten-5' },
+  { key: 'in code review', title: 'IN CODE REVIEW', color: 'deep-purple-darken-3', icon: 'mdi-code-braces', bgClass: 'bg-deep-purple-lighten-5' },
+  { key: 'blocked dev', title: 'BLOCKED (DEV)', color: 'red-darken-4', icon: 'mdi-alert-octagon', bgClass: 'bg-red-lighten-5' },
+  { key: 'ready for test', title: 'READY FOR TEST', color: 'orange-darken-4', icon: 'mdi-flask-empty-outline', bgClass: 'bg-orange-lighten-5' },
+  { key: 'in test', title: 'IN TEST', color: 'indigo-darken-4', icon: 'mdi-flask-outline', bgClass: 'bg-indigo-lighten-5' },
+  { key: 'blocked test', title: 'BLOCKED (TEST)', color: 'red-darken-4', icon: 'mdi-alert-circle-outline', bgClass: 'bg-red-lighten-5' },
+  { key: 'done', title: 'DONE', color: 'green-darken-3', icon: 'mdi-check-circle-outline', bgClass: 'bg-green-lighten-5' }
+]
+
+const getTasksByState = (stateKey) => {
+  return tasks.value.filter(t => t.state === stateKey)
+}
+
+const getCardBorderClass = (stateKey) => {
+  if (stateKey === 'to do') return 'border-grey-left'
+  if (stateKey === 'in progress') return 'border-blue-left'
+  if (stateKey === 'in code review') return 'border-purple-left'
+  if (stateKey === 'blocked dev' || stateKey === 'blocked test') return 'border-red-left'
+  if (stateKey === 'ready for test') return 'border-orange-left'
+  if (stateKey === 'in test') return 'border-indigo-left'
+  if (stateKey === 'done') return 'border-green-left'
+  return ''
+}
 
 // Görevleri Yükle
 const fetchTasks = async () => {
@@ -981,4 +907,11 @@ onMounted(() => {
   outline: 2px dashed #3f51b5 !important;
   transition: all 0.2s ease;
 }
+.border-grey-left { border-left: 4px solid #9e9e9e !important; }
+.border-blue-left { border-left: 4px solid #2196f3 !important; }
+.border-purple-left { border-left: 4px solid #9c27b0 !important; }
+.border-red-left { border-left: 4px solid #f44336 !important; }
+.border-orange-left { border-left: 4px solid #ff9800 !important; }
+.border-indigo-left { border-left: 4px solid #3f51b5 !important; }
+.border-green-left { border-left: 4px solid #4caf50 !important; }
 </style>

@@ -125,4 +125,69 @@ class Command(BaseCommand):
         if created:
             self.stdout.write(self.style.SUCCESS(f"Task '{t3.title}' created."))
 
+        # Create Task 4
+        t4, created = Task.objects.get_or_create(
+            title="Kod Gözden Geçirme (Code Review)",
+            defaults={
+                'definition': "Yazılan yeni API endpoint'lerinin ve serializer validasyon kurallarının PR üzerinden incelenmesi.",
+                'creator': admin_user,
+                'assignee': user1,
+                'state': 'in code review'
+            }
+        )
+        if created:
+            self.stdout.write(self.style.SUCCESS(f"Task '{t4.title}' created."))
+
+        # Create Task 5
+        t5, created = Task.objects.get_or_create(
+            title="Docker Yapılandırma Hatası",
+            defaults={
+                'definition': "Lokal Docker ortamında Nginx port çakışması nedeniyle geliştirme engellendi.",
+                'creator': user1,
+                'assignee': user1,
+                'state': 'blocked dev'
+            }
+        )
+        if created:
+            self.stdout.write(self.style.SUCCESS(f"Task '{t5.title}' created."))
+
+        # Create Task 6
+        t6, created = Task.objects.get_or_create(
+            title="Profil Sayfası Test Hazırlığı",
+            defaults={
+                'definition': "Yeni eklenen profil güncelleme ve Base64 resim yükleme fonksiyonlarının test senaryolarının yazılması.",
+                'creator': admin_user,
+                'assignee': user2,
+                'state': 'ready for test'
+            }
+        )
+        if created:
+            self.stdout.write(self.style.SUCCESS(f"Task '{t6.title}' created."))
+
+        # Create Task 7
+        t7, created = Task.objects.get_or_create(
+            title="Entegrasyon Testlerinin Koşulması",
+            defaults={
+                'definition': "Frontend ve Backend arasındaki API haberleşmesinin uçtan uca (E2E) test edilmesi.",
+                'creator': admin_user,
+                'assignee': user2,
+                'state': 'in test'
+            }
+        )
+        if created:
+            self.stdout.write(self.style.SUCCESS(f"Task '{t7.title}' created."))
+
+        # Create Task 8
+        t8, created = Task.objects.get_or_create(
+            title="Mobil Bildirim Test Hatası",
+            defaults={
+                'definition': "Test ortamında mobil cihazlara anlık bildirimlerin ulaşmaması hatası araştırılıyor.",
+                'creator': user2,
+                'assignee': user2,
+                'state': 'blocked test'
+            }
+        )
+        if created:
+            self.stdout.write(self.style.SUCCESS(f"Task '{t8.title}' created."))
+
         self.stdout.write(self.style.SUCCESS("Database initialization and seeding finished successfully!"))

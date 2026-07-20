@@ -9,9 +9,14 @@ class User(AbstractUser):
 
 class Task(models.Model):
     STATE_CHOICES = [
-        ('done', 'DONE'),
-        ('to do', 'TODO'),
-        ('in progress', 'IN_PROGRESS')
+        ('to do', 'TO DO'),
+        ('in progress', 'IN PROGRESS'),
+        ('in code review', 'IN CODE REVIEW'),
+        ('blocked dev', 'BLOCKED (DEV)'),
+        ('ready for test', 'READY FOR TEST'),
+        ('in test', 'IN TEST'),
+        ('blocked test', 'BLOCKED (TEST)'),
+        ('done', 'DONE')
     ]
     
     title = models.CharField(max_length=250)

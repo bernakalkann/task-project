@@ -48,54 +48,25 @@
         </h2>
         
         <v-row class="mb-8">
-          <!-- TODO KARTI -->
-          <v-col cols="12" md="4">
+          <v-col 
+            v-for="status in statusMetadata" 
+            :key="status.key" 
+            cols="12" 
+            sm="6" 
+            md="3"
+          >
             <v-card class="pa-6 rounded-xl text-center hover-elevate d-flex flex-column align-center" elevation="2" border>
-              <div class="text-subtitle-1 font-weight-bold text-grey-darken-1 mb-4">TODO (Yapılacaklar)</div>
+              <div class="text-subtitle-2 font-weight-bold text-grey-darken-1 mb-4 text-truncate w-100">{{ status.title }}</div>
               <v-progress-circular
-                :model-value="totalTasks > 0 ? (summary.todo / totalTasks) * 100 : 0"
-                size="110"
-                width="10"
-                color="grey"
-                class="mb-4 font-weight-bold text-h5"
+                :model-value="totalTasks > 0 ? ((summary[status.key] || 0) / totalTasks) * 100 : 0"
+                size="90"
+                width="8"
+                :color="status.color"
+                class="mb-4 font-weight-bold text-h6"
               >
-                {{ summary.todo }}
+                {{ summary[status.key] || 0 }}
               </v-progress-circular>
-              <div class="text-caption text-grey-darken-1">Toplam görevin %{{ totalTasks > 0 ? Math.round((summary.todo / totalTasks) * 100) : 0 }}'si</div>
-            </v-card>
-          </v-col>
-          
-          <!-- IN PROGRESS KARTI -->
-          <v-col cols="12" md="4">
-            <v-card class="pa-6 rounded-xl text-center hover-elevate d-flex flex-column align-center" elevation="2" border>
-              <div class="text-subtitle-1 font-weight-bold text-blue-darken-2 mb-4">IN PROGRESS (İşlemde)</div>
-              <v-progress-circular
-                :model-value="totalTasks > 0 ? (summary.in_progress / totalTasks) * 100 : 0"
-                size="110"
-                width="10"
-                color="blue"
-                class="mb-4 font-weight-bold text-h5 text-blue-darken-2"
-              >
-                {{ summary.in_progress }}
-              </v-progress-circular>
-              <div class="text-caption text-grey-darken-1">Toplam görevin %{{ totalTasks > 0 ? Math.round((summary.in_progress / totalTasks) * 100) : 0 }}'si</div>
-            </v-card>
-          </v-col>
-          
-          <!-- DONE KARTI -->
-          <v-col cols="12" md="4">
-            <v-card class="pa-6 rounded-xl text-center hover-elevate d-flex flex-column align-center" elevation="2" border>
-              <div class="text-subtitle-1 font-weight-bold text-green-darken-2 mb-4">DONE (Tamamlandı)</div>
-              <v-progress-circular
-                :model-value="totalTasks > 0 ? (summary.done / totalTasks) * 100 : 0"
-                size="110"
-                width="10"
-                color="green"
-                class="mb-4 font-weight-bold text-h5 text-green-darken-2"
-              >
-                {{ summary.done }}
-              </v-progress-circular>
-              <div class="text-caption text-grey-darken-1">Toplam görevin %{{ totalTasks > 0 ? Math.round((summary.done / totalTasks) * 100) : 0 }}'si</div>
+              <div class="text-caption text-grey-darken-1">Toplam görevin %{{ totalTasks > 0 ? Math.round(((summary[status.key] || 0) / totalTasks) * 100) : 0 }}'si</div>
             </v-card>
           </v-col>
         </v-row>
@@ -150,15 +121,29 @@
 import { ref, onMounted, computed } from 'vue'
 import api from '../api'
 
-const summary = ref({ todo: 0, in_progress: 0, done: 0 })
+const summary = ref({})
 const userProfile = ref(null)
 const isStaff = ref(localStorage.getItem('is_staff') === 'true')
 
+const statusMetadata = [
+  { key: 'to do', title: 'TO DO', color: 'grey-darken-2' },
+  { key: 'in progress', title: 'IN PROGRESS', color: 'blue-darken-2' },
+  { key: 'in code review', title: 'IN CODE REVIEW', color: 'deep-purple-darken-2' },
+  { key: 'blocked dev', title: 'BLOCKED (DEV)', color: 'red-darken-2' },
+  { key: 'ready for test', title: 'READY FOR TEST', color: 'orange-darken-2' },
+  { key: 'in test', title: 'IN TEST', color: 'indigo-darken-2' },
+  { key: 'blocked test', title: 'BLOCKED (TEST)', color: 'red-darken-4' },
+  { key: 'done', title: 'DONE', color: 'green-darken-2' }
+]
+
 // Görev toplamlarını ve tamamlanma oranını hesapla
-const totalTasks = computed(() => summary.value.todo + summary.value.in_progress + summary.value.done)
+const totalTasks = computed(() => {
+  return Object.values(summary.value).reduce((sum, count) => sum + count, 0)
+})
+
 const donePercentage = computed(() => {
   if (totalTasks.value === 0) return 0
-  return Math.round((summary.value.done / totalTasks.value) * 100)
+  return Math.round(((summary.value['done'] || 0) / totalTasks.value) * 100)
 })
 
 // Dinamik saat bazlı karşılama mesajı

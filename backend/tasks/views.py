@@ -63,6 +63,34 @@ class TaskViewSet(viewsets.ModelViewSet):
         }
         return Response(data)
 
+    # Excel (CSV) olarak dışa aktar
+    @action(detail=False, methods=['get'])
+    def export_excel(self, request):
+        import csv
+        from django.http import HttpResponse
+
+        # Giriş yapmış kullanıcının görmeye yetkili olduğu görevleri çek
+        tasks = self.get_queryset()
+
+        response = HttpResponse(content_type='text/csv')
+        # Türkçe karakter uyumluluğu için UTF-8 BOM ekliyoruz
+        response.write(u'\ufeff'.encode('utf8'))
+        response['Content-Disposition'] = 'attachment; filename="gorevler.csv"'
+
+        writer = csv.writer(response)
+        # Sütun başlıkları
+        writer.writerow(['Başlık', 'Durum', 'Oluşturan', 'Atanan Kişi'])
+
+        for task in tasks:
+            writer.writerow([
+                task.title,
+                task.state.upper(),
+                task.creator.username if task.creator else '',
+                task.assignee.username if task.assignee else ''
+            ])
+
+        return response
+
 # Yorumlar
 class CommentViewSet(viewsets.ModelViewSet):
     queryset = Comment.objects.all()

@@ -11,8 +11,18 @@
         <p class="text-subtitle-1 text-grey-darken-1">Görevlerinizi sütunlar arasında sürükleyin, detayları inceleyin ve yorum yapın.</p>
       </v-col>
       
-      <!-- Görev Ekle Butonu -->
-      <v-col cols="12" sm="6" class="text-sm-right">
+      <!-- Görev Ekle ve Excel Dışa Aktar Butonları -->
+      <v-col cols="12" sm="6" class="text-sm-right d-flex justify-sm-end gap-2 align-center">
+        <v-btn
+          color="success-darken-1"
+          prepend-icon="mdi-microsoft-excel"
+          size="large"
+          elevation="2"
+          :loading="exporting"
+          @click="exportTasks"
+        >
+          Excel Dışa Aktar
+        </v-btn>
         <v-btn
           color="indigo-darken-2"
           prepend-icon="mdi-plus"
@@ -551,6 +561,33 @@ const fetchTasks = async () => {
     console.error("Görevler yüklenirken hata oluştu:", error)
   } finally {
     loading.value = false
+  }
+}
+
+const exporting = ref(false)
+
+const exportTasks = async () => {
+  exporting.value = true
+  try {
+    const response = await api.get('tasks/export_excel/', {
+      responseType: 'blob'
+    })
+    
+    // Blob dosyasını indir
+    const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' })
+    const link = document.createElement('a')
+    const url = window.URL.createObjectURL(blob)
+    link.href = url
+    link.setAttribute('download', 'gorevler.csv')
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    window.URL.revokeObjectURL(url)
+  } catch (error) {
+    console.error("Görevler dışa aktarılırken hata oluştu:", error)
+    alert("Görevler dışa aktarılamadı.")
+  } finally {
+    exporting.value = false
   }
 }
 

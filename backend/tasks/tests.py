@@ -106,3 +106,16 @@ class TaskCollaborationAppTests(APITestCase):
         self.client.force_authenticate(user=self.admin_user)
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+
+    def test_export_excel(self):
+        """export_excel endpoint'inin kimlik doğrulama gerektirdiğini ve doğru CSV formatını döndüğünü doğrula."""
+        # Giriş yapmadan dene (Kimlik doğrulaması hatası almalı)
+        response = self.client.get("/api/tasks/export_excel/")
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        # Giriş yaparak dene
+        self.client.force_authenticate(user=self.user1)
+        response = self.client.get("/api/tasks/export_excel/")
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response['Content-Type'], 'text/csv')
+        self.assertIn('gorevler.csv', response['Content-Disposition'])

@@ -19,4 +19,4 @@ COPY . /app/
 
 EXPOSE 8000
 
-CMD ["sh", "-c", "python manage.py database_init && gunicorn core.wsgi:application --bind 0.0.0.0:8000"]
+CMD ["sh", "-c", "until nc -z -v -w7 ${POSTGRES_HOST:-db} ${POSTGRES_PORT:-5432}; do echo 'Waiting for postgres...'; sleep 1; done; python manage.py database_init && gunicorn core.wsgi:application --bind 0.0.0.0:8000"]

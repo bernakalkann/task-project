@@ -1,100 +1,119 @@
 # Görev Takip ve İşbirliği Uygulaması (Task Collaboration App)
 
-Bu proje, Django REST Framework tabanlı bir backend ile modern Vuetify (Vue 3) bileşenlerini kullanan bir frontend içeren çok kullanıcılı bir görev takip ve işbirliği uygulamasıdır.
-
-## Proje Yapısı
-
-* **backend/**: Python + Django REST Framework + PostgreSQL.
-* **frontend/**: Vue 3 + Vite + Vuetify + Axios + Pinia.
+Bu proje; **Django REST Framework** tabanlı backend, **Vue 3 + Vuetify** tabanlı frontend, **PostgreSQL** veritabanı ve **Docker + Nginx** multi-container ortamını içeren kurumsal bir görev takip ve işbirliği uygulamasıdır.
 
 ---
 
-## Kurulum ve Çalıştırma Talimatları
+## 🚀 Hızlı Başlangıç (Docker ile Tek Komutla Çalıştırma)
 
-### 1. Backend Kurulumu
+Projenin tüm servisleri (PostgreSQL DB, Django REST API, Nginx Reverse Proxy & Vue Frontend) Docker container'larında yapılandırılmıştır.
 
-Backend dizinine geçip sanal ortamı aktif hale getirin ve bağımlılıkları yükleyin:
+Tek yapmanız gereken proje ana dizininde şu komutu çalıştırmaktır:
+
+```bash
+docker compose up --build
+```
+
+Servisler başladıktan sonra:
+- **Uygulama Arayüzü (Frontend):** [http://localhost](http://localhost)
+- **Django REST API:** [http://localhost/api/](http://localhost/api/)
+- **Django Admin Paneli:** [http://localhost/admin/](http://localhost/admin/)
+
+> **Not:** Container'lar ayağa kalktığında `database_init` betiği otomatik olarak çalışır ve varsayılan kullanıcıları ve verileri yükler.
+
+### 🔑 Varsayılan Giriş Bilgileri
+
+| Kullanıcı Rolü | Kullanıcı Adı | Şifre | Yetkiler |
+| :--- | :--- | :--- | :--- |
+| **Sistem Yöneticisi (Admin)** | `admin` | `adminpassword` | Tüm menülere erişim, Kullanıcı Yönetimi (Users CRUD), herkese görev atama. |
+| **Geliştirici (User 1)** | `user1` | `user1password` | Sadece Görevler ve Profil paneli, kendine görev oluşturma, yorum ekleme. |
+| **Tasarımcı (User 2)** | `user2` | `user2password` | Sadece Görevler ve Profil paneli, kendine görev oluşturma, yorum ekleme. |
+
+---
+
+## 💻 Manuel (Yerel) Geliştirme Kurulumu
+
+### 1. Backend (Django REST Framework + PostgreSQL)
 
 ```bash
 cd backend
-# Sanal ortamı aktif edin (macOS/Linux)
-source venv/bin/activate
-# Veya Windows'ta: venv\Scripts\activate
+
+# Sanal ortamı oluşturun ve aktif edin
+python -m venv venv
+source venv/bin/activate  # Windows: venv\Scripts\activate
 
 # Bağımlılıkları yükleyin
 pip install -r requirements.txt
-```
 
-#### Veritabanı ve Migration İşlemleri
-Proje varsayılan olarak `core/settings.py` dosyasında PostgreSQL veritabanı ayarlarını kullanmaktadır. PostgreSQL veritabanı sunucunuzun çalışır durumda olduğundan emin olun.
-
-Veritabanı tablolarını oluşturmak ve örnek verileri (admin ve test kullanıcıları) yüklemek için aşağıdaki özel komutu çalıştırmanız yeterlidir:
-
-```bash
+# Veritabanını oluşturun ve varsayılan verileri yükleyin
 python manage.py database_init
-```
 
-Bu komut:
-1. Tüm Django migrasyonlarını otomatik çalıştırır.
-2. Default olarak aşağıdaki kullanıcıları oluşturur:
-   * **Admin Kullanıcısı:** `admin` (Şifre: `adminpassword`)
-   * **Kullanıcı 1:** `user1` (Şifre: `user1password`)
-   * **Kullanıcı 2:** `user2` (Şifre: `user2password`)
-3. Örnek görevleri ve yorumları sisteme ekler.
-
-#### Backend Sunucusunu Başlatma
-Sunucuyu lokal ortamda çalıştırmak için:
-
-```bash
+# Backend sunucusunu başlatın
 python manage.py runserver
 ```
 
-Backend sunucusu varsayılan olarak `http://127.0.0.1:8000` adresinde çalışacaktır.
-
----
-
-### 2. Frontend Kurulumu
-
-Frontend dizinine geçip npm bağımlılıklarını kurun ve geliştirici sunucusunu başlatın:
+### 2. Frontend (Vue 3 + Vuetify)
 
 ```bash
 cd frontend
+
+# Bağımlılıkları yükleyin
 npm install
+
+# Geliştirme sunucusunu başlatın
 npm run dev
 ```
 
-Frontend uygulaması varsayılan olarak `http://localhost:3000` veya terminalde belirtilen adreste çalışacaktır.
+---
+
+## 🏗️ Mimari ve Teknolojik Unsurlar
+
+### Multi-Container Docker Mimarisi
+```text
+               +----------------------------------+
+               |        Nginx Container (Port 80) |
+               | (Frontend SPA & Reverse Proxy)   |
+               +----------------+-----------------+
+                                |
+             +------------------+------------------+
+             |                                     |
+   /api/ ve /admin/ istekleri            Vue Static Files
+             |                                     |
+             v                                     v
++---------------------------+            +-------------------+
+|  Django Backend (Port 8000)|            | Single Page App   |
++------------+--------------+            +-------------------+
+             |
+             v
++---------------------------+
+| PostgreSQL DB (Port 5432) |
++---------------------------+
+```
 
 ---
 
-## Proje Özellikleri ve Yetkiler
+## 📋 Proje Gereksinimleri ve Karşılanan Özellikler
 
-### Kullanıcı Tipleri
-1. **Admin (Staff):**
-   * Sol tarafta yer alan **Kullanıcılar (Users)** menüsünü görebilir.
-   * Tüm kullanıcılara yeni görev atayabilir ve kullanıcı ekleme/güncelleme/silme işlemlerini yapabilir.
-   * Panodaki tüm görevleri görüntüleyebilir ve durumlarını değiştirebilir.
-   * Tüm yorumları düzenleyebilir ve silebilir.
-   * Anasayfa panellerinde sistemdeki tüm görevlerin toplam sayılarını görür.
-
-2. **Normal Kullanıcı:**
-   * **Kullanıcılar (Users)** menüsünü göremez ve bu API'lere erişemez (403 engeli).
-   * Yalnızca kendine atanan görevleri görüntüleyebilir.
-   * Sadece kendine ait görev yaratabilir (atanan kişi zorunlu olarak kendisi seçilir).
-   * Herhangi bir göreve yorum ekleyebilir. Yalnızca kendi yazdığı yorumları düzenleyebilir veya silebilir.
-   * Anasayfa panellerinde sadece kendine atanmış olan aktif görevlerin istatistiklerini görür.
-
-### Kanban Durumları (States)
-* `TODO` (Yapılacaklar)
-* `IN PROGRESS` (İşlemde)
-* `DONE` (Tamamlandı)
+### Part 1 & Genel Gereksinimler
+- ✅ **Kullanıcı Modeli (`User`)**: `AbstractUser` tabanlı, kullanıcı adı, şifre, e-posta, ad, soyad, doğum günü ve departman alanları.
+- ✅ **Görev Modeli (`Task`)**: Durumlar (`TODO`, `IN PROGRESS`, `DONE` vb.), öncelik, tip, süre, teslim tarihi ve self-referencing `parent` alanı ile **Subtask (Alt Görev)** desteği.
+- ✅ **Giriş (Login) Ekranı**: Username + Password ile giriş ve Token tabanlı kimlik doğrulama.
+- ✅ **Yetkilendirme ve Güvenlik**:
+  - Admin kullanıcılar sol menüde **Users** ekranını görür ve kullanıcılar üzerinde tam CRUD (Ekleme, Arama, Silme onayı) yapabilir.
+  - Normal kullanıcılar **Users** ekranını göremez, API seviyesinde 403 engeli uygulanır.
+  - Normal kullanıcılar sadece kendilerine `Task` oluşturabilir (Admin herkes adına oluşturabilir).
+- ✅ **Yorum ve Alt Görev Yönetimi**: Görevlere herkes yorum ekleyebilir. Yorum sahibi veya admin yorumları düzenleyebilir/silebilir. Alt görevler dinamik yönetilebilir.
+- ✅ **Dashboard (Home)**: Normal kullanıcılar kendilerine atanan görev durumlarını panellerde görür, admin ise sistem geneli istatistikleri inceler.
+- ✅ **DRF Serializers**: Tüm veriler backend ve frontend arasında serializers üzerinden geçer.
+- ✅ **REST API Search/Filter**: Arama ve filtreleme PostgreSQL sorguları üzerinden yürütülür.
 
 ---
 
-## Testlerin Çalıştırılması
+## 🧪 Testlerin Çalıştırılması
 
-Backend API testlerini çalıştırmak için `backend/` dizini altındayken:
+Backend birim testlerini koşturmak için:
 
 ```bash
+cd backend
 python manage.py test
 ```

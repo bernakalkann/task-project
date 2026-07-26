@@ -20,6 +20,7 @@
         <v-list-item prepend-icon="mdi-clipboard-text-multiple" title="Görevler" value="tasks" to="/tasks" color="cyan-accent-3"></v-list-item>
         <v-list-item prepend-icon="mdi-account-circle" title="Profilim" value="profile" to="/profile" color="cyan-accent-3"></v-list-item>
         <v-list-item v-if="isStaff" prepend-icon="mdi-account-group" title="Kullanıcılar" value="users" to="/users" color="cyan-accent-3"></v-list-item>
+        <v-list-item v-if="isStaff" prepend-icon="mdi-shield-text-outline" title="Sistem Logları" value="logs" to="/logs" color="cyan-accent-3"></v-list-item>
       </v-list>
     </v-navigation-drawer>
 

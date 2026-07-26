@@ -5,7 +5,7 @@
         <v-card class="elevation-12 rounded-xl border">
           <v-toolbar color="indigo-darken-3" dark flat class="px-2">
             <v-icon icon="mdi-lock-reset" class="mr-2" size="large"></v-icon>
-            <v-toolbar-title class="font-weight-bold">Yeni Şifre Belirleme</v-toolbar-title>
+            <v-toolbar-title class="font-weight-bold">Şifre Sıfırlama</v-toolbar-title>
           </v-toolbar>
 
           <v-card-text class="pa-6">
@@ -17,6 +17,30 @@
             </v-alert>
 
             <v-form v-if="!successMessage" @submit.prevent="submitReset">
+              <v-text-field
+                v-model="email"
+                label="E-posta Adresi"
+                prepend-inner-icon="mdi-email-outline"
+                type="email"
+                variant="outlined"
+                density="comfortable"
+                class="mb-2"
+                :rules="[v => !!v || 'E-posta zorunludur']"
+              />
+
+              <v-text-field
+                v-model="resetCode"
+                label="6 Haneli Doğrulama Kodu"
+                prepend-inner-icon="mdi-numeric"
+                type="text"
+                maxlength="6"
+                placeholder="123456"
+                variant="outlined"
+                density="comfortable"
+                class="mb-2 font-weight-bold text-center"
+                :rules="[v => (v && v.length === 6) || '6 haneli kod zorunludur']"
+              />
+
               <v-text-field
                 v-model="newPassword"
                 label="Yeni Şifre"
@@ -91,12 +115,13 @@
 
 <script setup>
 import { ref, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRouter } from 'vue-router'
 import api from '../api'
 
-const route = useRoute()
 const router = useRouter()
 
+const email = ref('')
+const resetCode = ref('')
 const newPassword = ref('')
 const confirmPassword = ref('')
 const errorMessage = ref('')
@@ -116,6 +141,8 @@ const rulesStatus = computed(() => {
 
 const isFormValid = computed(() => {
   return (
+    email.value.length > 0 &&
+    resetCode.value.length === 6 &&
     rulesStatus.value.length &&
     rulesStatus.value.digit &&
     rulesStatus.value.upper &&
@@ -128,26 +155,18 @@ const isFormValid = computed(() => {
 const submitReset = async () => {
   errorMessage.value = ''
   successMessage.value = ''
-  
-  const uid = route.query.uid
-  const token = route.query.token
-
-  if (!uid || !token) {
-    errorMessage.value = 'Geçersiz şifre sıfırlama bağlantısı. Bağlantıyı tekrar e-postanızdan kontrol ediniz.'
-    return
-  }
 
   loading.value = true
   try {
     const response = await api.post('reset-password/', {
-      uid,
-      token,
+      email: email.value,
+      reset_code: resetCode.value,
       new_password: newPassword.value
     })
     successMessage.value = response.data.message || 'Şifreniz başarıyla güncellendi!'
     setTimeout(() => {
       router.push('/login')
-    }, 2500)
+    }, 2000)
   } catch (err) {
     if (err.response && err.response.data && err.response.data.detail) {
       errorMessage.value = err.response.data.detail

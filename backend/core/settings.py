@@ -52,6 +52,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'tasks.middleware.RequestLogMiddleware',
 ]
 
 ROOT_URLCONF = 'core.urls'
@@ -79,16 +80,24 @@ WSGI_APPLICATION = 'core.wsgi.application'
 
 import os
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': os.getenv('POSTGRES_DB', 'task_db'),
-        'USER': os.getenv('POSTGRES_USER', 'postgres_user'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD', '1234'),
-        'HOST': os.getenv('POSTGRES_HOST', '127.0.0.1'),
-        'PORT': os.getenv('POSTGRES_PORT', '5432'),
+if os.getenv('USE_SQLITE', 'true').lower() == 'true' and 'POSTGRES_HOST' not in os.environ:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
     }
-}
+else:
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('POSTGRES_DB', 'task_db'),
+            'USER': os.getenv('POSTGRES_USER', 'postgres_user'),
+            'PASSWORD': os.getenv('POSTGRES_PASSWORD', '1234'),
+            'HOST': os.getenv('POSTGRES_HOST', '127.0.0.1'),
+            'PORT': os.getenv('POSTGRES_PORT', '5432'),
+        }
+    }
 
 
 # Password validation
@@ -145,3 +154,8 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.SessionAuthentication',  # DRF Browsable API paneli için saklayın
     ],
 }
+
+EMAIL_BACKEND = os.getenv('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL', 'noreply@taskproject.com')
+
+ENCRYPTION_KEY = os.getenv('ENCRYPTION_KEY', 'task_collaboration_secret_key_32b')

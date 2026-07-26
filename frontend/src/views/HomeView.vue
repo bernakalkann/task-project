@@ -6,7 +6,6 @@
         <!-- ÜST BANNER: HOŞ GELDİNİZ VE GENEL İLERLEME -->
         <v-card class="pa-8 mb-8 rounded-xl text-white position-relative overflow-hidden elevation-3" border>
           <div class="banner-bg position-absolute top-0 left-0 right-0 bottom-0"></div>
-          
           <div class="position-relative" style="z-index: 1;">
             <v-row align="center">
               <v-col cols="12" md="8">
@@ -40,6 +39,11 @@
             </v-row>
           </div>
         </v-card>
+
+
+
+
+
 
         <!-- KANBAN ÖZET KARTLARI (PROGRESS CIRCLES) -->
         <h2 class="text-h5 font-weight-bold text-indigo-darken-4 mb-6">

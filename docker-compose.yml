@@ -9,9 +9,9 @@ services:
       POSTGRES_USER: postgres_user
       POSTGRES_PASSWORD: '1234'
     ports:
-      - "5432:5432"
+      - "5433:5432"
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres_user -d task_db"]
+      test: [ "CMD-SHELL", "pg_isready -U postgres_user -d task_db" ]
       interval: 5s
       timeout: 5s
       retries: 5

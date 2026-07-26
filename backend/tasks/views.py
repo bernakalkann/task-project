@@ -1,11 +1,27 @@
-from rest_framework import viewsets, filters, permissions
+import random
+from datetime import timedelta
+from django.utils import timezone
+from django.core.mail import send_mail
+from django.conf import settings
+from django.contrib.auth import authenticate
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+
+from rest_framework import viewsets, filters, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
-from rest_framework.authtoken.views import ObtainAuthToken
+from rest_framework.views import APIView
 from rest_framework.authtoken.models import Token
-from .models import User, Task, Comment, Notification, UserProfile, Attachment
-from .serializers import UserSerializer, TaskSerializer, CommentSerializer, NotificationSerializer, UserProfileSerializer, AttachmentSerializer
+
+from .models import User, Task, Comment, Notification, UserProfile, Attachment, RequestLog
+from .serializers import (
+    UserSerializer, TaskSerializer, CommentSerializer, NotificationSerializer, 
+    UserProfileSerializer, AttachmentSerializer, RequestLogSerializer
+)
 from .permissions import IsCommentOwnerOrAdmin
+from .validators import validate_password_policy
+from .crypto_utils import encrypt_data
 
 # Sadece adminlerin kullanıcı yönetimi yapabilmesi için özel izin sınıfı
 class IsAdminUser(permissions.BasePermission):
@@ -23,12 +39,9 @@ class UserViewSet(viewsets.ModelViewSet):
 # Görevler üzerinde CRUD işlemleri
 class TaskViewSet(viewsets.ModelViewSet):
     serializer_class = TaskSerializer
-    
-    # İZİN AYARI: İsteklerin token ile gelmesi şart
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        # Eğer kullanıcı giriş yapmadıysa (hata durumu), boş liste dön
         if not self.request.user.is_authenticated:
             return Task.objects.none()
             
@@ -42,11 +55,11 @@ class TaskViewSet(viewsets.ModelViewSet):
         else:
             serializer.save(creator=self.request.user, assignee=self.request.user)
 
-    # Özet endpoint'i
+    # Özet endpoint'i (Şifreli yanıt döner)
     @action(detail=False, methods=['get'])
     def summary(self, request):
         if not request.user.is_authenticated:
-            return Response({"error": "Giriş yapmalısınız"}, status=403)
+            return Response({"detail": "girdiğiniz bilgiler hatalı"}, status=403)
             
         if request.user.is_staff:
             tasks = Task.objects.all()
@@ -54,7 +67,8 @@ class TaskViewSet(viewsets.ModelViewSet):
             tasks = Task.objects.filter(assignee=request.user)
         
         data = {choice[0]: tasks.filter(state=choice[0]).count() for choice in Task.STATE_CHOICES}
-        return Response(data)
+        # BE -> FE Şifreli Gönderim
+        return Response(encrypt_data(data))
 
     # Excel (CSV) olarak dışa aktar
     @action(detail=False, methods=['get'])
@@ -62,16 +76,13 @@ class TaskViewSet(viewsets.ModelViewSet):
         import csv
         from django.http import HttpResponse
 
-        # Giriş yapmış kullanıcının görmeye yetkili olduğu görevleri çek
         tasks = self.get_queryset()
 
         response = HttpResponse(content_type='text/csv')
-        # Türkçe karakter uyumluluğu için UTF-8 BOM ekliyoruz
         response.write(u'\ufeff'.encode('utf8'))
         response['Content-Disposition'] = 'attachment; filename="gorevler.csv"'
 
         writer = csv.writer(response)
-        # Sütun başlıkları
         writer.writerow(['Başlık', 'Durum', 'Oluşturan', 'Atanan Kişi'])
 
         for task in tasks:
@@ -93,12 +104,83 @@ class CommentViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
-class CustomObtainAuthToken(ObtainAuthToken):
+# 1. Aşama: Giriş yapma ve OTP gönderme
+class CustomObtainAuthToken(APIView):
+    permission_classes = [permissions.AllowAny]
+
     def post(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data,
-                                           context={'request': request})
-        serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data['user']
+        username = request.data.get('username')
+        password = request.data.get('password')
+
+        user = authenticate(username=username, password=password)
+        if not user:
+            # Şart: kullanıcı adı veya parolada tek tip hata mesajı
+            return Response({'detail': 'girdiğiniz bilgiler hatalı'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 6 haneli OTP üret
+        otp = f"{random.randint(100000, 999999)}"
+        user.otp_code = otp
+        user.otp_created_at = timezone.now()
+        user.save()
+
+        # E-posta gönderme akışı (Terminal print + Django email backend)
+        email = user.email or 'user@example.com'
+        try:
+            send_mail(
+                subject='Giriş Doğrulama Kodu (OTP)',
+                message=f'Sayın {user.username},\n\nSisteme giriş yapmak için OTP kodunuz: {otp}\nBu kod 5 dakika geçerlidir.',
+                from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@taskproject.com'),
+                recipient_list=[email],
+                fail_silently=True
+            )
+        except Exception:
+            pass
+        
+        # Terminale de print at
+        print(f"\n==========================================")
+        print(f"[OTP MAIL SENT] User: {user.username} | Email: {email} | OTP Code: {otp}")
+        print(f"==========================================\n")
+
+        # Maskelenmiş e-posta hazırlığı
+        email_parts = email.split('@') if '@' in email else [email, '']
+        masked_email = f"{email_parts[0][:2]}***@{email_parts[1]}" if len(email_parts[0]) > 2 else email
+
+        return Response({
+            'otp_required': True,
+            'user_id': user.id,
+            'email': masked_email,
+            'message': 'OTP doğrulama kodu e-posta adresinize gönderildi.'
+        })
+
+# 2. Aşama: OTP Doğrulama ve Token Alma
+class VerifyOTPView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, *args, **kwargs):
+        user_id = request.data.get('user_id')
+        otp_code = request.data.get('otp_code')
+
+        if not user_id or not otp_code:
+            return Response({'detail': 'girdiğiniz bilgiler hatalı'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({'detail': 'girdiğiniz bilgiler hatalı'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not user.otp_code or user.otp_code != str(otp_code).strip():
+            return Response({'detail': 'girdiğiniz bilgiler hatalı'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # 5 Dakika Süre Kontrolü
+        if user.otp_created_at and (timezone.now() - user.otp_created_at > timedelta(minutes=5)):
+            user.otp_code = None
+            user.save()
+            return Response({'detail': 'girdiğiniz bilgiler hatalı'}, status=status.HTTP_400_BAD_REQUEST)
+
+        # OTP başarılı, sıfırla ve token üret
+        user.otp_code = None
+        user.save()
+
         token, created = Token.objects.get_or_create(user=user)
         return Response({
             'token': token.key,
@@ -107,15 +189,78 @@ class CustomObtainAuthToken(ObtainAuthToken):
             'email': user.email,
             'is_staff': user.is_staff
         })
-    
 
+# Şifremi Unuttum (E-posta ile link gönderme)
+class ForgotPasswordView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        email = request.data.get('email')
+        if not email:
+            return Response({'detail': 'E-posta adresi zorunludur.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        user = User.objects.filter(email=email).first()
+        if user:
+            token = default_token_generator.make_token(user)
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            reset_link = f"http://localhost:3000/reset-password?uid={uid}&token={token}"
+
+            try:
+                send_mail(
+                    subject='Şifre Sıfırlama Bağlantısı',
+                    message=f'Merhaba {user.username},\n\nŞifrenizi güncellemek için aşağıdaki bağlantıya tıklayın:\n{reset_link}\n\nEğer bu isteği siz yapmadıysanız bu mesajı dikkate almayın.',
+                    from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@taskproject.com'),
+                    recipient_list=[user.email],
+                    fail_silently=True
+                )
+            except Exception:
+                pass
+
+            print(f"\n==========================================")
+            print(f"[RESET PASSWORD LINK] User: {user.username} | Email: {user.email}")
+            print(f"Link: {reset_link}")
+            print(f"==========================================\n")
+
+        return Response({
+            'message': 'Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.'
+        })
+
+# Şifre Sıfırlama (Gelen link ile yeni şifre kaydetme)
+class ResetPasswordView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        uid = request.data.get('uid')
+        token = request.data.get('token')
+        new_password = request.data.get('new_password')
+
+        if not uid or not token or not new_password:
+            return Response({'detail': 'Eksik parametre gönderildi.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user_id = force_str(urlsafe_base64_decode(uid))
+            user = User.objects.get(pk=user_id)
+        except Exception:
+            return Response({'detail': 'Geçersiz şifre sıfırlama bağlantısı.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        if not default_token_generator.check_token(user, token):
+            return Response({'detail': 'Şifre sıfırlama bağlantısının süresi dolmuş veya geçersiz.'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            validate_password_policy(new_password)
+        except Exception as e:
+            return Response({'detail': str(e.detail[0] if isinstance(e.detail, list) else e.detail)}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.set_password(new_password)
+        user.save()
+
+        return Response({'message': 'Şifreniz başarıyla güncellendi. Giriş yapabilirsiniz.'})
 
 class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = NotificationSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def get_queryset(self):
-        # Sadece giriş yapmış kullanıcının bildirimlerini getir
         return Notification.objects.filter(user=self.request.user)
     
     @action(detail=True, methods=['post'])
@@ -125,15 +270,14 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
         notification.save()
         return Response({'status': 'ok'})
 
-from rest_framework.views import APIView
-
 class ProfileView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
         profile, created = UserProfile.objects.get_or_create(user=request.user)
         serializer = UserProfileSerializer(profile, context={'request': request})
-        return Response(serializer.data)
+        # BE -> FE Şifreli Gönderim
+        return Response(encrypt_data(serializer.data))
 
     def patch(self, request):
         profile, created = UserProfile.objects.get_or_create(user=request.user)
@@ -149,3 +293,32 @@ class AttachmentViewSet(viewsets.ModelViewSet):
     queryset = Attachment.objects.all()
     serializer_class = AttachmentSerializer
     permission_classes = [permissions.IsAuthenticated]
+
+# Sadece Admin'in görebileceği HTTP Request Logs ViewSet
+class RequestLogViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = RequestLog.objects.all()
+    serializer_class = RequestLogSerializer
+    permission_classes = [permissions.IsAuthenticated, IsAdminUser]
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['username', 'ip_address', 'endpoint', 'method', 'status_code', 'user_agent']
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+
+        # İsteğe bağlı URL parametre filtreleri (method, status_code)
+        method_param = request.query_params.get('method')
+        if method_param:
+            queryset = queryset.filter(method__iexact=method_param)
+
+        status_param = request.query_params.get('status_code')
+        if status_param and status_param.isdigit():
+            queryset = queryset.filter(status_code=int(status_param))
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(encrypt_data(serializer.data))
+
+        serializer = self.get_serializer(queryset, many=True)
+        # BE -> FE Şifreli Gönderim
+        return Response(encrypt_data(serializer.data))

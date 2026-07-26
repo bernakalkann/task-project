@@ -130,25 +130,26 @@
           </v-card-text>
         </v-card>
 
-        <!-- ŞİFREMİ UNUTTUM DIALOG (YÖNTEM 2: KOD İLE MODAL İÇİ SIFIRLAMA) -->
-        <v-dialog v-model="forgotDialog" max-width="480">
+        <!-- ŞİFREMİ UNUTTUM DIALOG (TEK EKRANDA E-POSTA + KOD + YENİ ŞİFRE) -->
+        <v-dialog v-model="forgotDialog" max-width="500">
           <v-card class="rounded-xl">
             <v-card-title class="bg-primary text-white py-3 px-4 font-weight-bold d-flex align-center">
               <v-icon icon="mdi-lock-reset" class="mr-2"></v-icon>
-              Şifremi Unuttum
+              Şifre Sıfırlama
             </v-card-title>
             
             <v-card-text class="pa-6">
-              <v-alert v-if="forgotAlert" :type="forgotAlertType" variant="tonal" class="mb-4">
+              <v-alert v-if="forgotAlert" :type="forgotAlertType" variant="tonal" class="mb-4" closable @click:close="forgotAlert = ''">
                 {{ forgotAlert }}
               </v-alert>
 
-              <!-- DIALOG ADIM 1: E-POSTA GİRİŞİ -->
-              <div v-if="forgotStep === 1">
-                <p class="text-body-2 text-grey-darken-1 mb-4">
-                  Hesabınıza bağlı e-posta adresinizi giriniz. Size 6 haneli şifre sıfırlama kodu göndereceğiz.
-                </p>
+              <p class="text-body-2 text-grey-darken-1 mb-4">
+                1. E-posta adresinizi yazıp <strong>"Kod Gönder"</strong> butonuna basınız.<br/>
+                2. Terminalde çıkan 6 haneli kodu ve yeni şifrenizi aşağıya yazıp güncelleyiniz.
+              </p>
 
+              <!-- 1. E-POSTA VE KOD GÖNDER BUTONU -->
+              <div class="d-flex align-center ga-2 mb-3">
                 <v-text-field
                   v-model="forgotEmail"
                   label="E-posta Adresi"
@@ -156,96 +157,87 @@
                   type="email"
                   variant="outlined"
                   density="comfortable"
-                  class="mb-2"
+                  hide-details
                 />
+                <v-btn
+                  color="primary"
+                  variant="flat"
+                  size="large"
+                  class="text-capitalize font-weight-bold"
+                  :loading="forgotSendingCode"
+                  @click="sendForgotCode"
+                >
+                  Kod Gönder
+                </v-btn>
               </div>
 
-              <!-- DIALOG ADIM 2: 6 HANELİ KOD VE YENİ ŞİFRE GİRİŞİ -->
-              <div v-else>
-                <p class="text-body-2 text-grey-darken-1 mb-4">
-                  <strong>{{ forgotEmail }}</strong> adresine gönderilen 6 haneli sıfırlama kodunu ve yeni şifrenizi giriniz.
-                </p>
+              <!-- 2. 6 HANELİ KOD VE YENİ ŞİFRE GİRİŞİ -->
+              <v-text-field
+                v-model="forgotCode"
+                label="Sıfırlama Kodu (6 Haneli)"
+                prepend-inner-icon="mdi-numeric"
+                type="text"
+                maxlength="6"
+                placeholder="123456"
+                variant="outlined"
+                density="comfortable"
+                class="mb-3 font-weight-bold text-center"
+              />
 
-                <v-text-field
-                  v-model="forgotCode"
-                  label="Sıfırlama Kodu (6 Haneli)"
-                  prepend-inner-icon="mdi-numeric"
-                  type="text"
-                  maxlength="6"
-                  placeholder="123456"
-                  variant="outlined"
-                  density="comfortable"
-                  class="mb-3 font-weight-bold text-center"
-                />
+              <v-text-field
+                v-model="forgotNewPassword"
+                label="Yeni Şifre"
+                prepend-inner-icon="mdi-lock-outline"
+                type="password"
+                variant="outlined"
+                density="comfortable"
+                class="mb-2"
+              />
 
-                <v-text-field
-                  v-model="forgotNewPassword"
-                  label="Yeni Şifre"
-                  prepend-inner-icon="mdi-lock-outline"
-                  type="password"
-                  variant="outlined"
-                  density="comfortable"
-                  class="mb-2"
-                />
+              <v-text-field
+                v-model="forgotConfirmPassword"
+                label="Yeni Şifre (Tekrar)"
+                prepend-inner-icon="mdi-lock-check-outline"
+                type="password"
+                variant="outlined"
+                density="comfortable"
+                class="mb-3"
+              />
 
-                <v-text-field
-                  v-model="forgotConfirmPassword"
-                  label="Yeni Şifre (Tekrar)"
-                  prepend-inner-icon="mdi-lock-check-outline"
-                  type="password"
-                  variant="outlined"
-                  density="comfortable"
-                  class="mb-3"
-                />
-
-                <!-- ŞİFRE ŞARTLARI CHECKLIST -->
-                <v-card variant="tonal" color="indigo" class="pa-3 mb-2 rounded-lg text-caption">
-                  <div class="font-weight-bold mb-1">Güvenli Şifre Kuralları:</div>
-                  <div :class="rulesStatus.length ? 'text-success' : 'text-grey-darken-1'">
-                    <v-icon size="small" :icon="rulesStatus.length ? 'mdi-check-circle' : 'mdi-circle-outline'"></v-icon>
-                    En az 8 karakter
-                  </div>
-                  <div :class="rulesStatus.digit ? 'text-success' : 'text-grey-darken-1'">
-                    <v-icon size="small" :icon="rulesStatus.digit ? 'mdi-check-circle' : 'mdi-circle-outline'"></v-icon>
-                    En az 1 rakam (0-9)
-                  </div>
-                  <div :class="rulesStatus.upper ? 'text-success' : 'text-grey-darken-1'">
-                    <v-icon size="small" :icon="rulesStatus.upper ? 'mdi-check-circle' : 'mdi-circle-outline'"></v-icon>
-                    En az 1 büyük harf (A-Z)
-                  </div>
-                  <div :class="rulesStatus.lower ? 'text-success' : 'text-grey-darken-1'">
-                    <v-icon size="small" :icon="rulesStatus.lower ? 'mdi-check-circle' : 'mdi-circle-outline'"></v-icon>
-                    En az 1 küçük harf (a-z)
-                  </div>
-                  <div :class="rulesStatus.symbol ? 'text-success' : 'text-grey-darken-1'">
-                    <v-icon size="small" :icon="rulesStatus.symbol ? 'mdi-check-circle' : 'mdi-circle-outline'"></v-icon>
-                    En az 1 sembol (!@#$%^&* vb.)
-                  </div>
-                </v-card>
-              </div>
+              <!-- ŞİFRE ŞARTLARI CHECKLIST -->
+              <v-card variant="tonal" color="indigo" class="pa-3 mb-2 rounded-lg text-caption">
+                <div class="font-weight-bold mb-1">Güvenli Şifre Kuralları:</div>
+                <div :class="rulesStatus.length ? 'text-success' : 'text-grey-darken-1'">
+                  <v-icon size="small" :icon="rulesStatus.length ? 'mdi-check-circle' : 'mdi-circle-outline'"></v-icon>
+                  En az 8 karakter
+                </div>
+                <div :class="rulesStatus.digit ? 'text-success' : 'text-grey-darken-1'">
+                  <v-icon size="small" :icon="rulesStatus.digit ? 'mdi-check-circle' : 'mdi-circle-outline'"></v-icon>
+                  En az 1 rakam (0-9)
+                </div>
+                <div :class="rulesStatus.upper ? 'text-success' : 'text-grey-darken-1'">
+                  <v-icon size="small" :icon="rulesStatus.upper ? 'mdi-check-circle' : 'mdi-circle-outline'"></v-icon>
+                  En az 1 büyük harf (A-Z)
+                </div>
+                <div :class="rulesStatus.lower ? 'text-success' : 'text-grey-darken-1'">
+                  <v-icon size="small" :icon="rulesStatus.lower ? 'mdi-check-circle' : 'mdi-circle-outline'"></v-icon>
+                  En az 1 küçük harf (a-z)
+                </div>
+                <div :class="rulesStatus.symbol ? 'text-success' : 'text-grey-darken-1'">
+                  <v-icon size="small" :icon="rulesStatus.symbol ? 'mdi-check-circle' : 'mdi-circle-outline'"></v-icon>
+                  En az 1 sembol (!@#$%^&* vb.)
+                </div>
+              </v-card>
             </v-card-text>
 
             <v-card-actions class="pa-4 bg-grey-lighten-4">
-              <v-btn v-if="forgotStep === 2" variant="text" size="small" @click="forgotStep = 1">
-                <v-icon size="small" class="mr-1">mdi-arrow-left</v-icon> Geri
-              </v-btn>
               <v-spacer></v-spacer>
-              <v-btn variant="text" color="grey-darken-2" @click="forgotDialog = false">İptal</v-btn>
-              
+              <v-btn variant="text" color="grey-darken-2" @click="forgotDialog = false">Kapat</v-btn>
               <v-btn
-                v-if="forgotStep === 1"
                 color="primary"
                 variant="flat"
-                :loading="forgotLoading"
-                @click="sendForgotCode"
-              >
-                Sıfırlama Kodu Gönder
-              </v-btn>
-
-              <v-btn
-                v-else
-                color="primary"
-                variant="flat"
+                size="large"
+                class="text-capitalize font-weight-bold px-6"
                 :loading="forgotLoading"
                 :disabled="!isForgotFormValid"
                 @click="resetPasswordWithCode"
@@ -279,13 +271,13 @@ const errorMessage = ref('')
 const infoMessage = ref('')
 const loading = ref(false)
 
-// Şifremi unuttum modal (Yöntem 2) değişkenleri
+// Şifremi unuttum modal değişkenleri
 const forgotDialog = ref(false)
-const forgotStep = ref(1) // 1: Email, 2: Code & New Password
 const forgotEmail = ref('')
 const forgotCode = ref('')
 const forgotNewPassword = ref('')
 const forgotConfirmPassword = ref('')
+const forgotSendingCode = ref(false)
 const forgotLoading = ref(false)
 const forgotAlert = ref('')
 const forgotAlertType = ref('info')
@@ -303,6 +295,7 @@ const rulesStatus = computed(() => {
 
 const isForgotFormValid = computed(() => {
   return (
+    forgotEmail.value.length > 0 &&
     forgotCode.value.length === 6 &&
     rulesStatus.value.length &&
     rulesStatus.value.digit &&
@@ -315,7 +308,6 @@ const isForgotFormValid = computed(() => {
 
 const openForgotDialog = () => {
   forgotDialog.value = true
-  forgotStep.value = 1
   forgotEmail.value = ''
   forgotCode.value = ''
   forgotNewPassword.value = ''
@@ -397,7 +389,7 @@ const resetToStep1 = () => {
   infoMessage.value = ''
 }
 
-// YÖNTEM 2 - Adım 1: Sıfırlama Kodu Gönder
+// 1. Sıfırlama Kodu Gönder
 const sendForgotCode = async () => {
   if (!forgotEmail.value) {
     forgotAlert.value = 'Lütfen e-posta adresinizi giriniz.'
@@ -405,22 +397,21 @@ const sendForgotCode = async () => {
     return
   }
 
-  forgotLoading.value = true
+  forgotSendingCode.value = true
   forgotAlert.value = ''
   try {
     const response = await api.post('forgot-password/', { email: forgotEmail.value })
-    forgotAlert.value = response.data.message || 'Şifre sıfırlama kodu gönderildi.'
+    forgotAlert.value = response.data.message || 'Şifre sıfırlama kodu gönderildi. Terminalinizi kontrol ediniz.'
     forgotAlertType.value = 'success'
-    forgotStep.value = 2
   } catch (error) {
     forgotAlert.value = 'Şifre sıfırlama kodu gönderilirken bir hata oluştu.'
     forgotAlertType.value = 'error'
   } finally {
-    forgotLoading.value = false
+    forgotSendingCode.value = false
   }
 }
 
-// YÖNTEM 2 - Adım 2: 6 Haneli Kod ve Yeni Şifre İle Sıfırla
+// 2. 6 Haneli Kod ve Yeni Şifre İle Sıfırla
 const resetPasswordWithCode = async () => {
   if (!isForgotFormValid.value) return
 

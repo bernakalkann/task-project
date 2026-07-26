@@ -1,6 +1,6 @@
-# Görev Takip ve İşbirliği Uygulaması (Task Collaboration App)
+# Görev Takip ve İşbirliği Uygulaması (Task Collaboration App - GoJira)
 
-Bu proje; **Django REST Framework** tabanlı backend, **Vue 3 + Vuetify** tabanlı frontend, **PostgreSQL** veritabanı ve **Docker + Nginx** multi-container ortamını içeren kurumsal bir görev takip ve işbirliği uygulamasıdır.
+Bu proje; **Django REST Framework** tabanlı backend, **Vue 3 + Vuetify** tabanlı frontend, **PostgreSQL** veritabanı ve **Docker + Nginx** multi-container ortamını içeren kurumsal bir görev takip, güvenlik ve işbirliği uygulamasıdır.
 
 ---
 
@@ -19,21 +19,23 @@ Servisler başladıktan sonra:
 - **Django REST API:** [http://localhost/api/](http://localhost/api/)
 - **Django Admin Paneli:** [http://localhost/admin/](http://localhost/admin/)
 
-> **Not:** Container'lar ayağa kalktığında `database_init` betiği otomatik olarak çalışır ve varsayılan kullanıcıları ve verileri yükler.
+> **Not:** Container'lar ayağa kalktığında varsayılan kullanıcılar ve veriler otomatik yüklenir.
+
+---
 
 ### 🔑 Varsayılan Giriş Bilgileri
 
 | Kullanıcı Rolü | Kullanıcı Adı | Şifre | Yetkiler |
 | :--- | :--- | :--- | :--- |
-| **Sistem Yöneticisi (Admin)** | `admin` | `adminpassword` | Tüm menülere erişim, Kullanıcı Yönetimi (Users CRUD), herkese görev atama. |
-| **Geliştirici (User 1)** | `user1` | `user1password` | Sadece Görevler ve Profil paneli, kendine görev oluşturma, yorum ekleme. |
-| **Tasarımcı (User 2)** | `user2` | `user2password` | Sadece Görevler ve Profil paneli, kendine görev oluşturma, yorum ekleme. |
+| **Sistem Yöneticisi (Admin)** | `admin` | `AdminPassword123!` | Tüm menülere erişim, Kullanıcı Yönetimi (Users CRUD), Sistem Logları (`/logs`), herkese görev atama. |
+| **Geliştirici (User 1)** | `user1` | `User1Password123!` | Görev Panosu, Profil paneli, kendine görev oluşturma, yorum ekleme. |
+| **Tasarımcı (User 2)** | `user2` | `User2Password123!` | Görev Panosu, Profil paneli, kendine görev oluşturma, yorum ekleme. |
 
 ---
 
 ## 💻 Manuel (Yerel) Geliştirme Kurulumu
 
-### 1. Backend (Django REST Framework + PostgreSQL)
+### 1. Backend (Django REST Framework + PostgreSQL / SQLite)
 
 ```bash
 cd backend
@@ -45,8 +47,8 @@ source venv/bin/activate  # Windows: venv\Scripts\activate
 # Bağımlılıkları yükleyin
 pip install -r requirements.txt
 
-# Veritabanını oluşturun ve varsayılan verileri yükleyin
-python manage.py database_init
+# Veritabanı migrasyonlarını uygulayın
+python manage.py migrate
 
 # Backend sunucusunu başlatın
 python manage.py runserver
@@ -77,7 +79,7 @@ npm run dev
                                 |
              +------------------+------------------+
              |                                     |
-   /api/ ve /admin/ istekleri            Vue Static Files
+    /api/ ve /admin/ istekleri            Vue Static Files
              |                                     |
              v                                     v
 +---------------------------+            +-------------------+
@@ -92,28 +94,46 @@ npm run dev
 
 ---
 
-## 📋 Proje Gereksinimleri ve Karşılanan Özellikler
+## 📋 Proje Özellikleri ve Karşılanan Gereksinimler
 
-### Part 1 & Genel Gereksinimler
-- ✅ **Kullanıcı Modeli (`User`)**: `AbstractUser` tabanlı, kullanıcı adı, şifre, e-posta, ad, soyad, doğum günü ve departman alanları.
-- ✅ **Görev Modeli (`Task`)**: Durumlar (`TODO`, `IN PROGRESS`, `DONE` vb.), öncelik, tip, süre, teslim tarihi ve self-referencing `parent` alanı ile **Subtask (Alt Görev)** desteği.
-- ✅ **Giriş (Login) Ekranı**: Username + Password ile giriş ve Token tabanlı kimlik doğrulama.
-- ✅ **Yetkilendirme ve Güvenlik**:
-  - Admin kullanıcılar sol menüde **Users** ekranını görür ve kullanıcılar üzerinde tam CRUD (Ekleme, Arama, Silme onayı) yapabilir.
-  - Normal kullanıcılar **Users** ekranını göremez, API seviyesinde 403 engeli uygulanır.
-  - Normal kullanıcılar sadece kendilerine `Task` oluşturabilir (Admin herkes adına oluşturabilir).
-- ✅ **Yorum ve Alt Görev Yönetimi**: Görevlere herkes yorum ekleyebilir. Yorum sahibi veya admin yorumları düzenleyebilir/silebilir. Alt görevler dinamik yönetilebilir.
-- ✅ **Dashboard (Home)**: Normal kullanıcılar kendilerine atanan görev durumlarını panellerde görür, admin ise sistem geneli istatistikleri inceler.
-- ✅ **DRF Serializers**: Tüm veriler backend ve frontend arasında serializers üzerinden geçer.
-- ✅ **REST API Search/Filter**: Arama ve filtreleme PostgreSQL sorguları üzerinden yürütülür.
+### 🛡️ Part 2 & Güvenlik Özellikleri
+- ✅ **Parola Karmaşıklık Kontrolü**: En az 8 karakter, rakam, sembol (`!@#$%^&*` vb.), büyük ve küçük harf içerme zorunluluğu (`validators.py`).
+- ✅ **2 Aşamalı OTP ile Giriş**: Kullanıcı adı/parola doğrulamasının ardından 6 haneli OTP kodu üretilerek e-posta atılır ve terminale yazdırılır. 5 dakika geçerlik süreli OTP doğrulanmadan Token verilmez.
+- ✅ **Standart Hata Mesajı**: User Enumeration saldırılarını engellemek için tüm kullanıcı adı/parola/OTP hatalarında standart olarak `"girdiğiniz bilgiler hatalı"` mesajı dönülür.
+- ✅ **Şifremi Unuttum ve Sıfırlama Akışı**: E-posta adresi ile şifre sıfırlama linki (`/reset-password?uid=...&token=...`) gönderilir ve yeni şifre parola politikasına göre güncellenir.
+- ✅ **FE ve BE Uçtan Uca Veri Şifreleme (`ENCRYPTION_KEY`)**: 
+  - Backend üzerindeki hassas uç noktalar (`/api/profile/`, `/api/tasks/summary/`, `/api/logs/`) AES-256-CBC ile şifreli paket (`encrypted_data`, `iv`) döndürür.
+  - Ağ (Network) sekmesinde veriler şifreli görünür. Frontend Axios interceptor'ı (`api.js`) Web Crypto API kullanarak verileri otomatik çözer.
+- ✅ **Admin-Only "Sistem Logları" Ekranı (`/logs`)**:
+  - `RequestLogMiddleware` ile atılan *bütün* HTTP isteklerinin IP adresi, kullanıcı, User-Agent, metod, endpoint ve durum kodu kaydedilir.
+  - Sadece Admin (`is_staff`) yetkisine sahip kullanıcıların erişebildiği aranabilir ve filtrelenebilir **Sistem Logları** ekranı sunulur.
+
+### 📋 Part 1 & Temel Özellikler
+- ✅ **Kullanıcı Modeli (`User`)**: `AbstractUser` tabanlı, kullanıcı adı, şifre, e-posta, ad, soyad, doğum günü, departman, `otp_code` ve `otp_created_at` alanları.
+- ✅ **Görev Modeli (`Task`)**: Durumlar (`TO DO`, `IN PROGRESS`, `DONE` vb.), öncelik, tip, süre, teslim tarihi ve self-referencing `parent` alanı ile **Subtask (Alt Görev)** desteği.
+- ✅ **Yorum ve Alt Görev Yönetimi**: Görevlere yorum ekleme, yorum sahibi veya admin düzenleme/silme yetkileri.
+- ✅ **Interaktif Üst Bar ve Menüler**: Çalışma Alanları, Projeler, Filtreler, Panolar, Arama ve Yardım dokümantasyon modalları.
 
 ---
 
-## 🧪 Testlerin Çalıştırılması
+## 🧪 Birim Testlerin (Unit Tests) Çalıştırılması
 
-Backend birim testlerini koşturmak için:
+Tüm backend güvenlik, OTP, şifreleme, permission ve loglama testlerini çalıştırmak için:
 
 ```bash
 cd backend
-python manage.py test
+python manage.py test tasks
 ```
+
+---
+
+## 📌 Commit Geçmişi
+
+Projedeki tüm Part 2 geliştirmeleri modüler commit'ler ile saklanmıştır:
+- `83195b2` - `feat: parola karmaşıklık politikası ve kontrol mekanizması eklendi`
+- `70dd37d` - `feat: 2 aşamalı OTP ile giriş özelliği ve standart hata mesajları eklendi`
+- `6d4196a` - `feat: e-posta ile şifremi unuttum ve şifre sıfırlama akışı eklendi`
+- `0c77ec6` - `feat: FE ve BE hassas veri iletimi için AES şifreleme altyapısı eklendi`
+- `1c66c4a` - `feat: admin istek loglama middleware ve Logs ekranı eklendi`
+- `08a91bc` - `refactor: genel kod temizlikleri, home view iyileştirmeleri ve kapsamlı birim testler eklendi`
+- `521b636` & `31dc53d` - `fix: üst bar butonlarının açılır menüleri ve tıklama yönlendirmeleri düzeltildi`

@@ -1,19 +1,31 @@
 from rest_framework import serializers
-from .models import User, Task, Comment, UserProfile, Notification, Attachment
+from .models import User, Task, Comment, UserProfile, Notification, Attachment, RequestLog
+
+class RequestLogSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RequestLog
+        fields = ['id', 'user', 'username', 'ip_address', 'user_agent', 'method', 'endpoint', 'status_code', 'timestamp']
+
+from .validators import validate_password_policy
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=False, style={'input_type': 'password'})
-
     avatar = serializers.CharField(source='profile.avatar', read_only=True)
 
     class Meta:
         model = User
         fields = ['id', 'username', 'password', 'email', 'first_name', 'last_name', 'birthday', 'department', 'avatar']
 
+    def validate_password(self, value):
+        if value:
+            validate_password_policy(value)
+        return value
+
     def create(self, validated_data):
         password = validated_data.pop('password', None)
         if not password:
             raise serializers.ValidationError({"password": "Şifre alanı zorunludur."})
+        validate_password_policy(password)
         user = super().create(validated_data)
         user.set_password(password)
         user.save()
@@ -21,6 +33,8 @@ class UserSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         password = validated_data.pop('password', None)
+        if password:
+            validate_password_policy(password)
         user = super().update(instance, validated_data)
         if password:
             user.set_password(password)
@@ -30,7 +44,7 @@ class UserSerializer(serializers.ModelSerializer):
 class AttachmentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Attachment
-        fields = ['id', 'task', 'comment', 'name', 'file_data', 'file_type', 'uploaded_at']
+        fields = "__all__"
 
 class CommentSerializer(serializers.ModelSerializer):
     user = serializers.ReadOnlyField(source='user.username') # Sadece kullanıcı adını göstersin

@@ -217,9 +217,13 @@ class ForgotPasswordView(APIView):
             except Exception:
                 pass
 
-            print(f"\n==========================================")
-            print(f"[RESET PASSWORD CODE] User: {user.username} | Email: {user.email} | Reset Code: {reset_code}")
-            print(f"==========================================\n")
+            print("\n" + "🔑 "*15)
+            print(f"  🔐 [ŞİFRE SIFIRLAMA KODU / RESET CODE]")
+            print(f"  Kullanıcı : {user.username}")
+            print(f"  E-Posta   : {user.email}")
+            print(f"  =====================================")
+            print(f"  GİRİLECEK 6 HANELİ KOD: ===>  {reset_code}  <===")
+            print("🔑 "*15 + "\n")
 
         return Response({
             'message': 'Şifre sıfırlama kodu e-posta adresinize gönderildi.',

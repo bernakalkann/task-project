@@ -5,8 +5,9 @@ from django.conf import settings
 class User(AbstractUser):
     birthday = models.DateField(null=True, blank=True) 
     department = models.CharField(max_length=100, null=True, blank=True)
-    otp_code = models.CharField(max_length=10, null=True, blank=True)
+    otp_code = models.CharField(max_length=255, null=True, blank=True)
     otp_created_at = models.DateTimeField(null=True, blank=True)
+    otp_attempt_count = models.PositiveIntegerField(default=0)
 
 class Task(models.Model):
     STATE_CHOICES = [

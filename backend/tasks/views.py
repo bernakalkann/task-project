@@ -1,18 +1,19 @@
-import random
+import secrets
+import logging
 from datetime import timedelta
 from django.utils import timezone
 from django.core.mail import send_mail
 from django.conf import settings
 from django.contrib.auth import authenticate
-from django.contrib.auth.tokens import default_token_generator
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.utils.encoding import force_bytes, force_str
+from django.contrib.auth.hashers import make_password, check_password
+from django.db import transaction
 
 from rest_framework import viewsets, filters, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import action
 from rest_framework.views import APIView
 from rest_framework.authtoken.models import Token
+from rest_framework.throttling import ScopedRateThrottle
 
 from .models import User, Task, Comment, Notification, UserProfile, Attachment, RequestLog
 from .serializers import (
@@ -22,6 +23,8 @@ from .serializers import (
 from .permissions import IsCommentOwnerOrAdmin
 from .validators import validate_password_policy
 from .crypto_utils import encrypt_data
+
+logger = logging.getLogger(__name__)
 
 # Sadece adminlerin kullanıcı yönetimi yapabilmesi için özel izin sınıfı
 class IsAdminUser(permissions.BasePermission):
@@ -106,7 +109,15 @@ class CommentViewSet(viewsets.ModelViewSet):
 
 # 1. Aşama: Giriş yapma ve OTP gönderme
 class CustomObtainAuthToken(APIView):
+    """
+    1. Aşama Login: Kullanıcı adı ve parolayı doğrular.
+    - Kriptografik olarak güvenli 6 haneli OTP üretir (secrets modülü).
+    - OTP veritabanında make_password() ile hash'li saklanır.
+    - IP/Kullanıcı başına rate limiting uygulanır.
+    """
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'otp_request'
 
     def post(self, request, *args, **kwargs):
         username = request.data.get('username')
@@ -114,16 +125,18 @@ class CustomObtainAuthToken(APIView):
 
         user = authenticate(username=username, password=password)
         if not user:
-            # Şart: kullanıcı adı veya parolada tek tip hata mesajı
-            return Response({'detail': 'girdiğiniz bilgiler hatalı'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': 'Girdiğiniz bilgiler hatalı.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # 6 haneli OTP üret
-        otp = f"{random.randint(100000, 999999)}"
-        user.otp_code = otp
+        # Kriptografik olarak güvenli 6 haneli OTP üret
+        otp = f"{secrets.randbelow(900000) + 100000:06d}"
+        
+        # OTP'yi veritabanında hash'li sakla ve sayacı sıfırla
+        user.otp_code = make_password(otp)
         user.otp_created_at = timezone.now()
+        user.otp_attempt_count = 0
         user.save()
 
-        # E-posta gönderme akışı (Terminal print + Django email backend)
+        # E-posta gönderme akışı (Hassas veri terminale yazdırılmaz)
         email = user.email or 'user@example.com'
         try:
             send_mail(
@@ -133,13 +146,8 @@ class CustomObtainAuthToken(APIView):
                 recipient_list=[email],
                 fail_silently=True
             )
-        except Exception:
-            pass
-        
-        # Terminale de print at
-        print(f"\n==========================================")
-        print(f"[OTP MAIL SENT] User: {user.username} | Email: {email} | OTP Code: {otp}")
-        print(f"==========================================\n")
+        except Exception as e:
+            logger.error(f"OTP maili gönderilemedi: {e}")
 
         # Maskelenmiş e-posta hazırlığı
         email_parts = email.split('@') if '@' in email else [email, '']
@@ -154,56 +162,99 @@ class CustomObtainAuthToken(APIView):
 
 # 2. Aşama: OTP Doğrulama ve Token Alma
 class VerifyOTPView(APIView):
+    """
+    2. Aşama Login: OTP Doğrulama ve DRF Token teslimi.
+    - Race condition önlemek için transaction.atomic() ve select_for_update() kullanır.
+    - OTP kontrolü check_password() ile güvenli biçimde yapılır.
+    - Hatalı, eksik veya süresi dolmuş isteklerde tek tip hata mesajı döndürülür.
+    - 5 hatalı denemede OTP otomatik olarak iptal edilir.
+    """
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'otp_verify'
+
+    def _clear_otp(self, user):
+        user.otp_code = None
+        user.otp_created_at = None
+        user.otp_attempt_count = 0
+        user.save()
 
     def post(self, request, *args, **kwargs):
         user_id = request.data.get('user_id')
         otp_code = request.data.get('otp_code')
+        generic_error = Response({'detail': 'Girdiğiniz bilgiler hatalı.'}, status=status.HTTP_400_BAD_REQUEST)
 
         if not user_id or not otp_code:
-            return Response({'detail': 'girdiğiniz bilgiler hatalı'}, status=status.HTTP_400_BAD_REQUEST)
+            return generic_error
 
         try:
-            user = User.objects.get(id=user_id)
+            with transaction.atomic():
+                user = User.objects.select_for_update().get(pk=user_id)
+
+                # 1. OTP veya oluşturulma tarihi yoksa
+                if not user.otp_code or not user.otp_created_at:
+                    self._clear_otp(user)
+                    return generic_error
+
+                # 2. 5 Dakikalık zaman aşımı kontrolü
+                if timezone.now() - user.otp_created_at > timedelta(minutes=5):
+                    self._clear_otp(user)
+                    return generic_error
+
+                # 3. Maksimum deneme sayısı aşılmışsa
+                if (user.otp_attempt_count or 0) >= 5:
+                    self._clear_otp(user)
+                    return generic_error
+
+                # 4. Hash doğrulaması (check_password)
+                if not check_password(str(otp_code).strip(), user.otp_code):
+                    user.otp_attempt_count = (user.otp_attempt_count or 0) + 1
+                    if user.otp_attempt_count >= 5:
+                        self._clear_otp(user)
+                    else:
+                        user.save(update_fields=['otp_attempt_count'])
+                    return generic_error
+
+                # OTP Doğrulandı: OTP alanlarını temizle ve token teslim et
+                self._clear_otp(user)
+                token, created = Token.objects.get_or_create(user=user)
+
+                return Response({
+                    'token': token.key,
+                    'user_id': user.pk,
+                    'username': user.username,
+                    'email': user.email,
+                    'is_staff': user.is_staff
+                })
         except User.DoesNotExist:
-            return Response({'detail': 'girdiğiniz bilgiler hatalı'}, status=status.HTTP_400_BAD_REQUEST)
+            return generic_error
 
-        if not user.otp_code or user.otp_code != str(otp_code).strip():
-            return Response({'detail': 'girdiğiniz bilgiler hatalı'}, status=status.HTTP_400_BAD_REQUEST)
-
-        # 5 Dakika Süre Kontrolü
-        if user.otp_created_at and (timezone.now() - user.otp_created_at > timedelta(minutes=5)):
-            user.otp_code = None
-            user.save()
-            return Response({'detail': 'girdiğiniz bilgiler hatalı'}, status=status.HTTP_400_BAD_REQUEST)
-
-        # OTP başarılı, sıfırla ve token üret
-        user.otp_code = None
-        user.save()
-
-        token, created = Token.objects.get_or_create(user=user)
-        return Response({
-            'token': token.key,
-            'user_id': user.pk,
-            'username': user.username,
-            'email': user.email,
-            'is_staff': user.is_staff
-        })
-
-# Şifremi Unuttum (6 Haneli Kod Gönderme - Yöntem 2)
+# Şifremi Unuttum (6 Haneli OTP Kod Üretimi)
 class ForgotPasswordView(APIView):
+    """
+    Şifremi Unuttum Endpoint'i.
+    - User Enumeration engellemek için e-posta sistemde kayıtlı olmasa bile aynı başarılı yanıtı döner.
+    - secrets.randbelow() ile 6 haneli OTP üretir ve make_password() ile hash'ler.
+    """
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'otp_request'
 
     def post(self, request):
         email = request.data.get('email')
+        success_response = Response({
+            'message': 'Şifre sıfırlama kodu e-posta adresinize gönderildi.'
+        })
+
         if not email:
-            return Response({'detail': 'E-posta adresi zorunludur.'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({'detail': 'Girdiğiniz bilgiler hatalı.'}, status=status.HTTP_400_BAD_REQUEST)
 
         user = User.objects.filter(email=email).first()
         if user:
-            reset_code = f"{random.randint(100000, 999999)}"
-            user.otp_code = reset_code
+            reset_code = f"{secrets.randbelow(900000) + 100000:06d}"
+            user.otp_code = make_password(reset_code)
             user.otp_created_at = timezone.now()
+            user.otp_attempt_count = 0
             user.save()
 
             try:
@@ -214,54 +265,81 @@ class ForgotPasswordView(APIView):
                     recipient_list=[user.email],
                     fail_silently=True
                 )
-            except Exception:
-                pass
+            except Exception as e:
+                logger.error(f"Şifre sıfırlama maili gönderilemedi: {e}")
 
-            print("\n" + "🔑 "*15)
-            print(f"  🔐 [ŞİFRE SIFIRLAMA KODU / RESET CODE]")
-            print(f"  Kullanıcı : {user.username}")
-            print(f"  E-Posta   : {user.email}")
-            print(f"  =====================================")
-            print(f"  GİRİLECEK 6 HANELİ KOD: ===>  {reset_code}  <===")
-            print("🔑 "*15 + "\n")
+        return success_response
 
-        return Response({
-            'message': 'Şifre sıfırlama kodu e-posta adresinize gönderildi.',
-            'email': email
-        })
-
-# Şifre Sıfırlama (6 Haneli Kod ve Yeni Şifre İle Sıfırlama - Yöntem 2)
+# Şifre Sıfırlama (OTP Hash Kontrolü ve Yeni Parola Atama)
 class ResetPasswordView(APIView):
+    """
+    Şifre Sıfırlama Endpoint'i.
+    - E-posta, reset_code ve new_password doğrulaması yapar.
+    - Race condition engellemek için select_for_update() kullanır.
+    - set_password() ile yeni parolayı hash'ler.
+    """
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = 'otp_verify'
+
+    def _clear_otp(self, user):
+        user.otp_code = None
+        user.otp_created_at = None
+        user.otp_attempt_count = 0
+        user.save(update_fields=['otp_code', 'otp_created_at', 'otp_attempt_count'])
 
     def post(self, request):
         email = request.data.get('email')
         reset_code = request.data.get('reset_code')
         new_password = request.data.get('new_password')
+        generic_error = Response({'detail': 'Girdiğiniz bilgiler hatalı.'}, status=status.HTTP_400_BAD_REQUEST)
 
         if not email or not reset_code or not new_password:
-            return Response({'detail': 'E-posta, doğrulama kodu ve yeni şifre zorunludur.'}, status=status.HTTP_400_BAD_REQUEST)
+            return generic_error
 
         user = User.objects.filter(email=email).first()
-        if not user or not user.otp_code or user.otp_code != str(reset_code).strip():
-            return Response({'detail': 'Doğrulama kodu hatalı veya geçersiz.'}, status=status.HTTP_400_BAD_REQUEST)
-
-        # 5 Dakika Geçerlilik Kontrolü
-        if user.otp_created_at and (timezone.now() - user.otp_created_at > timedelta(minutes=5)):
-            user.otp_code = None
-            user.save()
-            return Response({'detail': 'Doğrulama kodunun süresi dolmuş.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not user:
+            return generic_error
 
         try:
-            validate_password_policy(new_password)
-        except Exception as e:
-            return Response({'detail': str(e.detail[0] if isinstance(e.detail, list) else e.detail)}, status=status.HTTP_400_BAD_REQUEST)
+            with transaction.atomic():
+                user = User.objects.select_for_update().get(pk=user.pk)
 
-        user.set_password(new_password)
-        user.otp_code = None
-        user.save()
+                if not user.otp_code or not user.otp_created_at:
+                    self._clear_otp(user)
+                    return generic_error
 
-        return Response({'message': 'Şifreniz başarıyla güncellendi. Yeni şifrenizle giriş yapabilirsiniz.'})
+                if timezone.now() - user.otp_created_at > timedelta(minutes=5):
+                    self._clear_otp(user)
+                    return generic_error
+
+                if (user.otp_attempt_count or 0) >= 5:
+                    self._clear_otp(user)
+                    return generic_error
+
+                if not check_password(str(reset_code).strip(), user.otp_code):
+                    user.otp_attempt_count = (user.otp_attempt_count or 0) + 1
+                    if user.otp_attempt_count >= 5:
+                        self._clear_otp(user)
+                    else:
+                        user.save(update_fields=['otp_attempt_count'])
+                    return generic_error
+
+                try:
+                    validate_password_policy(new_password)
+                except Exception as e:
+                    detail_msg = str(e.detail[0] if isinstance(e.detail, list) else e.detail)
+                    return Response({'detail': detail_msg}, status=status.HTTP_400_BAD_REQUEST)
+
+                user.set_password(new_password)
+                user.otp_code = None
+                user.otp_created_at = None
+                user.otp_attempt_count = 0
+                user.save()
+
+                return Response({'message': 'Şifreniz başarıyla güncellendi. Yeni şifrenizle giriş yapabilirsiniz.'})
+        except User.DoesNotExist:
+            return generic_error
 
 class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = NotificationSerializer

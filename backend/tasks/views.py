@@ -190,7 +190,7 @@ class VerifyOTPView(APIView):
             'is_staff': user.is_staff
         })
 
-# Şifremi Unuttum (E-posta ile link gönderme)
+# Şifremi Unuttum (6 Haneli Kod Gönderme - Yöntem 2)
 class ForgotPasswordView(APIView):
     permission_classes = [permissions.AllowAny]
 
@@ -201,14 +201,15 @@ class ForgotPasswordView(APIView):
 
         user = User.objects.filter(email=email).first()
         if user:
-            token = default_token_generator.make_token(user)
-            uid = urlsafe_base64_encode(force_bytes(user.pk))
-            reset_link = f"http://localhost:3000/reset-password?uid={uid}&token={token}"
+            reset_code = f"{random.randint(100000, 999999)}"
+            user.otp_code = reset_code
+            user.otp_created_at = timezone.now()
+            user.save()
 
             try:
                 send_mail(
-                    subject='Şifre Sıfırlama Bağlantısı',
-                    message=f'Merhaba {user.username},\n\nŞifrenizi güncellemek için aşağıdaki bağlantıya tıklayın:\n{reset_link}\n\nEğer bu isteği siz yapmadıysanız bu mesajı dikkate almayın.',
+                    subject='Şifre Sıfırlama Kodu',
+                    message=f'Merhaba {user.username},\n\nŞifrenizi güncellemek için doğrulama kodunuz: {reset_code}\nBu kod 5 dakika geçerlidir.',
                     from_email=getattr(settings, 'DEFAULT_FROM_EMAIL', 'noreply@taskproject.com'),
                     recipient_list=[user.email],
                     fail_silently=True
@@ -217,34 +218,35 @@ class ForgotPasswordView(APIView):
                 pass
 
             print(f"\n==========================================")
-            print(f"[RESET PASSWORD LINK] User: {user.username} | Email: {user.email}")
-            print(f"Link: {reset_link}")
+            print(f"[RESET PASSWORD CODE] User: {user.username} | Email: {user.email} | Reset Code: {reset_code}")
             print(f"==========================================\n")
 
         return Response({
-            'message': 'Şifre sıfırlama bağlantısı e-posta adresinize gönderildi.'
+            'message': 'Şifre sıfırlama kodu e-posta adresinize gönderildi.',
+            'email': email
         })
 
-# Şifre Sıfırlama (Gelen link ile yeni şifre kaydetme)
+# Şifre Sıfırlama (6 Haneli Kod ve Yeni Şifre İle Sıfırlama - Yöntem 2)
 class ResetPasswordView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
-        uid = request.data.get('uid')
-        token = request.data.get('token')
+        email = request.data.get('email')
+        reset_code = request.data.get('reset_code')
         new_password = request.data.get('new_password')
 
-        if not uid or not token or not new_password:
-            return Response({'detail': 'Eksik parametre gönderildi.'}, status=status.HTTP_400_BAD_REQUEST)
+        if not email or not reset_code or not new_password:
+            return Response({'detail': 'E-posta, doğrulama kodu ve yeni şifre zorunludur.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            user_id = force_str(urlsafe_base64_decode(uid))
-            user = User.objects.get(pk=user_id)
-        except Exception:
-            return Response({'detail': 'Geçersiz şifre sıfırlama bağlantısı.'}, status=status.HTTP_400_BAD_REQUEST)
+        user = User.objects.filter(email=email).first()
+        if not user or not user.otp_code or user.otp_code != str(reset_code).strip():
+            return Response({'detail': 'Doğrulama kodu hatalı veya geçersiz.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        if not default_token_generator.check_token(user, token):
-            return Response({'detail': 'Şifre sıfırlama bağlantısının süresi dolmuş veya geçersiz.'}, status=status.HTTP_400_BAD_REQUEST)
+        # 5 Dakika Geçerlilik Kontrolü
+        if user.otp_created_at and (timezone.now() - user.otp_created_at > timedelta(minutes=5)):
+            user.otp_code = None
+            user.save()
+            return Response({'detail': 'Doğrulama kodunun süresi dolmuş.'}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             validate_password_policy(new_password)
@@ -252,9 +254,10 @@ class ResetPasswordView(APIView):
             return Response({'detail': str(e.detail[0] if isinstance(e.detail, list) else e.detail)}, status=status.HTTP_400_BAD_REQUEST)
 
         user.set_password(new_password)
+        user.otp_code = None
         user.save()
 
-        return Response({'message': 'Şifreniz başarıyla güncellendi. Giriş yapabilirsiniz.'})
+        return Response({'message': 'Şifreniz başarıyla güncellendi. Yeni şifrenizle giriş yapabilirsiniz.'})
 
 class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = NotificationSerializer

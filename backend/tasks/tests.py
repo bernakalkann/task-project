@@ -99,23 +99,20 @@ class TaskCollaborationAppTests(APITestCase):
         self.assertIn('token', res_otp_success.data)
 
     def test_forgot_and_reset_password_flow(self):
-        """Şifremi unuttum e-posta bağlantısı ve şifre sıfırlama akışını doğrula."""
-        # 1. Şifremi unuttum isteği at
+        """Yöntem 2: Şifremi unuttum 6 haneli OTP doğrulama kodu ile şifre sıfırlama akışını doğrula."""
+        # 1. Şifremi unuttum isteği at (6 haneli kod üretilir ve mail atılır)
         forgot_res = self.client.post("/api/forgot-password/", {"email": "user1@example.com"})
         self.assertEqual(forgot_res.status_code, status.HTTP_200_OK)
 
-        # 2. Şifre sıfırlama bağlantısı parametrelerini simüle et
-        from django.contrib.auth.tokens import default_token_generator
-        from django.utils.http import urlsafe_base64_encode
-        from django.utils.encoding import force_bytes
+        # 2. Üretilen sıfırlama kodunu veritabanından çek
+        self.user1.refresh_from_db()
+        reset_code = self.user1.otp_code
+        self.assertIsNotNone(reset_code)
 
-        token = default_token_generator.make_token(self.user1)
-        uid = urlsafe_base64_encode(force_bytes(self.user1.pk))
-
-        # 3. Yeni şifre ile reset yap
+        # 3. 6 Haneli kod ve yeni şifre ile reset yap
         reset_res = self.client.post("/api/reset-password/", {
-            "uid": uid,
-            "token": token,
+            "email": "user1@example.com",
+            "reset_code": reset_code,
             "new_password": "BrandNewPassword123!"
         })
         self.assertEqual(reset_res.status_code, status.HTTP_200_OK)

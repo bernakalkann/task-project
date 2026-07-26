@@ -54,16 +54,22 @@
       </div>
 
       <!-- Çalışma Alanları Dropdown Menu -->
-      <v-menu location="bottom start">
+      <v-menu location="bottom start" open-on-click>
         <template v-slot:activator="{ props }">
-          <v-btn variant="text" class="text-capitalize text-grey-darken-3 font-weight-medium px-2 mr-2 d-none d-lg-flex" size="small" v-bind="props">
+          <v-btn
+            variant="text"
+            class="text-capitalize text-grey-darken-3 font-weight-medium px-2 mr-2 d-none d-sm-flex"
+            size="small"
+            v-bind="props"
+            @click="router.push('/tasks')"
+          >
             Çalışma Alanları <v-icon size="16" class="ml-1">mdi-chevron-down</v-icon>
           </v-btn>
         </template>
         <v-card width="280" class="rounded-lg elevation-4 border pa-2">
           <v-list density="compact">
             <v-list-subheader class="font-weight-bold">Mevcut Çalışma Alanı</v-list-subheader>
-            <v-list-item prepend-icon="mdi-briefcase-check" title="GoJira Görev Takip Alanı" subtitle="Aktif Alan" color="indigo" active></v-list-item>
+            <v-list-item prepend-icon="mdi-briefcase-check" title="GoJira Görev Takip Alanı" subtitle="Aktif Alan" color="indigo" active @click="router.push('/tasks')"></v-list-item>
             <v-divider class="my-2"></v-divider>
             <v-list-item prepend-icon="mdi-view-dashboard-variant-outline" title="Tüm Çalışma Alanlarını Gör" @click="router.push('/tasks')"></v-list-item>
           </v-list>
@@ -71,9 +77,15 @@
       </v-menu>
 
       <!-- Projeler Dropdown Menu -->
-      <v-menu location="bottom start">
+      <v-menu location="bottom start" open-on-click>
         <template v-slot:activator="{ props }">
-          <v-btn variant="text" class="text-capitalize text-grey-darken-3 font-weight-medium px-2 mr-2 d-none d-lg-flex" size="small" v-bind="props">
+          <v-btn
+            variant="text"
+            class="text-capitalize text-grey-darken-3 font-weight-medium px-2 mr-2 d-none d-sm-flex"
+            size="small"
+            v-bind="props"
+            @click="router.push('/tasks')"
+          >
             Projeler <v-icon size="16" class="ml-1">mdi-chevron-down</v-icon>
           </v-btn>
         </template>
@@ -89,9 +101,15 @@
       </v-menu>
 
       <!-- Filtreler Dropdown Menu -->
-      <v-menu location="bottom start">
+      <v-menu location="bottom start" open-on-click>
         <template v-slot:activator="{ props }">
-          <v-btn variant="text" class="text-capitalize text-grey-darken-3 font-weight-medium px-2 mr-2 d-none d-lg-flex" size="small" v-bind="props">
+          <v-btn
+            variant="text"
+            class="text-capitalize text-grey-darken-3 font-weight-medium px-2 mr-2 d-none d-sm-flex"
+            size="small"
+            v-bind="props"
+            @click="router.push('/tasks')"
+          >
             Filtreler <v-icon size="16" class="ml-1">mdi-chevron-down</v-icon>
           </v-btn>
         </template>
@@ -108,9 +126,15 @@
       </v-menu>
 
       <!-- Panolar Dropdown Menu -->
-      <v-menu location="bottom start">
+      <v-menu location="bottom start" open-on-click>
         <template v-slot:activator="{ props }">
-          <v-btn variant="text" class="text-capitalize text-grey-darken-3 font-weight-medium px-2 mr-6 d-none d-lg-flex" size="small" v-bind="props">
+          <v-btn
+            variant="text"
+            class="text-capitalize text-grey-darken-3 font-weight-medium px-2 mr-6 d-none d-sm-flex"
+            size="small"
+            v-bind="props"
+            @click="router.push('/tasks')"
+          >
             Panolar <v-icon size="16" class="ml-1">mdi-chevron-down</v-icon>
           </v-btn>
         </template>

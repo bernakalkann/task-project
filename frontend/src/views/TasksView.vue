@@ -193,6 +193,12 @@
 
       <v-spacer></v-spacer>
 
+      <!-- REAL-TIME WEBSOCKET CANLI BAĞLANTI ROZETİ -->
+      <v-chip size="small" :color="wsConnected ? 'emerald' : 'amber-darken-3'" variant="flat" class="font-weight-bold mr-2">
+        <v-icon :icon="wsConnected ? 'mdi-wifi-check' : 'mdi-wifi-sync'" size="14" class="mr-1"></v-icon>
+        {{ wsConnected ? 'Real-Time WebSocket Bağlı' : 'Soket Bağlanıyor...' }}
+      </v-chip>
+
       <!-- Tasarım Görünümleri -->
       <div class="d-flex align-center gap-1 flex-shrink-0">
         <v-btn icon variant="text" size="small" color="grey-darken-2"><v-icon>mdi-chart-bar</v-icon></v-btn>
@@ -1176,6 +1182,42 @@ const currentTheme = computed(() => theme.global.name.value)
 const tasks = ref([])
 const usersList = ref([])
 const loading = ref(false)
+const wsConnected = ref(false)
+let socket = null
+
+const initWebSocket = () => {
+  try {
+    const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    const wsHost = window.location.host.includes(':') ? window.location.host : 'localhost:8000'
+    const wsUrl = `${wsProtocol}//${wsHost}/ws/tasks/`
+
+    socket = new WebSocket(wsUrl)
+
+    socket.onopen = () => {
+      wsConnected.value = true
+    }
+
+    socket.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data)
+        if (data.action === 'task_updated') {
+          fetchTasksSilently()
+        }
+      } catch (e) {}
+    }
+
+    socket.onclose = () => {
+      wsConnected.value = false
+      setTimeout(initWebSocket, 4000)
+    }
+
+    socket.onerror = () => {
+      wsConnected.value = false
+    }
+  } catch (e) {
+    wsConnected.value = false
+  }
+}
 
 const drawer = ref(false)
 const selectedTask = ref(null)
@@ -1397,6 +1439,13 @@ const fetchTasks = async () => {
   } finally {
     loading.value = false
   }
+}
+
+const fetchTasksSilently = async () => {
+  try {
+    const response = await api.get('tasks/')
+    tasks.value = response.value || response.data
+  } catch (error) {}
 }
 
 const exporting = ref(false)
@@ -2016,6 +2065,7 @@ onMounted(() => {
     fetchUsers()
   }
   fetchTasks()
+  initWebSocket()
 })
 </script>
 

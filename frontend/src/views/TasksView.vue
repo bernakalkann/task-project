@@ -1668,10 +1668,18 @@ const exportICalendar = () => {
   document.body.removeChild(link)
 }
 
+const notifyWebSocket = (taskId = null) => {
+  try {
+    if (socket && socket.readyState === WebSocket.OPEN) {
+      socket.send(JSON.stringify({ action: 'task_updated', task_id: taskId }))
+    }
+  } catch (e) {}
+}
+
 const initWebSocket = () => {
   try {
     const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const wsHost = window.location.host.includes(':') ? window.location.host : 'localhost:8000'
+    const wsHost = window.location.host
     const wsUrl = `${wsProtocol}//${wsHost}/ws/tasks/`
 
     socket = new WebSocket(wsUrl)
@@ -1691,7 +1699,7 @@ const initWebSocket = () => {
 
     socket.onclose = () => {
       wsConnected.value = false
-      setTimeout(initWebSocket, 4000)
+      setTimeout(initWebSocket, 2000)
     }
 
     socket.onerror = () => {

@@ -7,6 +7,8 @@ from django.conf import settings
 from django.contrib.auth import authenticate
 from django.contrib.auth.hashers import make_password, check_password
 from django.db import transaction
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
 
 from rest_framework import viewsets, filters, permissions, status
 from rest_framework.response import Response
@@ -97,11 +99,36 @@ class TaskViewSet(viewsets.ModelViewSet):
 
         return queryset
 
+    def _broadcast_task_event(self, task_id=None, action='task_updated'):
+        try:
+            channel_layer = get_channel_layer()
+            if channel_layer:
+                async_to_sync(channel_layer.group_send)(
+                    'tasks_channel_group',
+                    {
+                        'type': 'task_event',
+                        'action': action,
+                        'task_id': task_id
+                    }
+                )
+        except Exception as e:
+            logger.error(f"WebSocket broadcast hatası: {e}")
+
     def perform_create(self, serializer):
         if self.request.user.is_staff:
-            serializer.save(creator=self.request.user)
+            task = serializer.save(creator=self.request.user)
         else:
-            serializer.save(creator=self.request.user, assignee=self.request.user)
+            task = serializer.save(creator=self.request.user, assignee=self.request.user)
+        self._broadcast_task_event(task.id, 'task_updated')
+
+    def perform_update(self, serializer):
+        task = serializer.save()
+        self._broadcast_task_event(task.id, 'task_updated')
+
+    def perform_destroy(self, instance):
+        task_id = instance.id
+        instance.delete()
+        self._broadcast_task_event(task_id, 'task_updated')
 
     # Özet endpoint'i (Şifreli yanıt döner)
     @action(detail=False, methods=['get'])

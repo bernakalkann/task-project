@@ -61,17 +61,34 @@ class CommentSerializer(serializers.ModelSerializer):
         except Exception:
             return ""
 
+from .models import User, Task, Comment, UserProfile, Notification, Attachment, RequestLog, Sprint
+
+class SprintSerializer(serializers.ModelSerializer):
+    total_tasks = serializers.SerializerMethodField()
+    total_story_points = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Sprint
+        fields = ['id', 'name', 'goal', 'start_date', 'end_date', 'status', 'created_at', 'total_tasks', 'total_story_points']
+
+    def get_total_tasks(self, obj):
+        return obj.tasks.count()
+
+    def get_total_story_points(self, obj):
+        return sum(t.story_points or 0 for t in obj.tasks.all())
+
 class SubTaskSerializer(serializers.ModelSerializer):
     assignee_username = serializers.ReadOnlyField(source='assignee.username')
 
     class Meta:
         model = Task
-        fields = ['id', 'title', 'state', 'assignee', 'assignee_username', 'task_type', 'priority']
+        fields = ['id', 'title', 'state', 'assignee', 'assignee_username', 'task_type', 'priority', 'story_points']
 
 class TaskSerializer(serializers.ModelSerializer):
-    comments = CommentSerializer(many=True, read_only=True) # Task ile yorumları beraber çekmek için
+    comments = CommentSerializer(many=True, read_only=True)
     assignee_username = serializers.ReadOnlyField(source='assignee.username')
     creator_username = serializers.ReadOnlyField(source='creator.username')
+    sprint_name = serializers.ReadOnlyField(source='sprint.name')
     assignee_avatar = serializers.SerializerMethodField()
     creator_avatar = serializers.SerializerMethodField()
     attachments = AttachmentSerializer(many=True, read_only=True)
@@ -79,8 +96,8 @@ class TaskSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Task
-        fields = ['id', 'title', 'definition', 'create_date', 'creator', 'creator_username', 'assignee', 'assignee_username', 'state', 'comments', 'priority', 'task_type', 'duration', 'due_date', 'epic', 'version', 'assignee_avatar', 'creator_avatar', 'attachments', 'parent', 'subtasks']
-        read_only_fields = ['creator'] # creator otomatik olarak atanacak, kullanıcı değiştiremez
+        fields = ['id', 'title', 'definition', 'create_date', 'creator', 'creator_username', 'assignee', 'assignee_username', 'sprint', 'sprint_name', 'state', 'comments', 'priority', 'task_type', 'duration', 'story_points', 'due_date', 'epic', 'version', 'assignee_avatar', 'creator_avatar', 'attachments', 'parent', 'subtasks']
+        read_only_fields = ['creator']
 
     def get_assignee_avatar(self, obj):
         try:

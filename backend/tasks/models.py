@@ -9,6 +9,22 @@ class User(AbstractUser):
     otp_created_at = models.DateTimeField(null=True, blank=True)
     otp_attempt_count = models.PositiveIntegerField(default=0)
 
+class Sprint(models.Model):
+    STATUS_CHOICES = [
+        ('future', 'Gelecek'),
+        ('active', 'Aktif'),
+        ('completed', 'Tamamlandı')
+    ]
+    name = models.CharField(max_length=150)
+    goal = models.TextField(blank=True, null=True, default='')
+    start_date = models.DateField(null=True, blank=True)
+    end_date = models.DateField(null=True, blank=True)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='future')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} ({self.get_status_display()})"
+
 class Task(models.Model):
     STATE_CHOICES = [
         ('to do', 'TO DO'),
@@ -27,6 +43,7 @@ class Task(models.Model):
     #foreignkeys
     creator = models.ForeignKey(User, on_delete=models.CASCADE, related_name='created_tasks')
     assignee = models.ForeignKey(User, on_delete=models.CASCADE, related_name='assigned_tasks')
+    sprint = models.ForeignKey(Sprint, on_delete=models.SET_NULL, null=True, blank=True, related_name='tasks')
     state = models.CharField(max_length=30, choices=STATE_CHOICES, default='to do')
     parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='subtasks')
 
@@ -46,6 +63,7 @@ class Task(models.Model):
     priority = models.CharField(max_length=20, choices=PRIORITY_CHOICES, default='medium')
     task_type = models.CharField(max_length=20, choices=TYPE_CHOICES, default='task')
     duration = models.PositiveIntegerField(default=0, help_text="Tahmini süre (saat)")
+    story_points = models.PositiveIntegerField(default=1, null=True, blank=True, help_text="Story Point efor puanı")
     due_date = models.DateField(null=True, blank=True)
     epic = models.CharField(max_length=100, blank=True, null=True, default='')
     version = models.CharField(max_length=50, blank=True, null=True, default='')

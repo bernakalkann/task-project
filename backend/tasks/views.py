@@ -40,6 +40,35 @@ class UserViewSet(viewsets.ModelViewSet):
     search_fields = ['username', 'email', 'first_name', 'last_name']
 
 # Görevler üzerinde CRUD işlemleri
+from .models import User, Task, Comment, Notification, UserProfile, Attachment, RequestLog, Sprint
+from .serializers import (
+    UserSerializer, TaskSerializer, CommentSerializer, NotificationSerializer, 
+    UserProfileSerializer, AttachmentSerializer, RequestLogSerializer, SprintSerializer
+)
+
+class SprintViewSet(viewsets.ModelViewSet):
+    queryset = Sprint.objects.all().order_by('-created_at')
+    serializer_class = SprintSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    @action(detail=True, methods=['post'])
+    def start_sprint(self, request, pk=None):
+        sprint = self.get_object()
+        # Diğer aktif sprintleri tamamlandı yapıp bunu aktif yapalım
+        Sprint.objects.filter(status='active').update(status='future')
+        sprint.status = 'active'
+        sprint.save()
+        return Response(SprintSerializer(sprint).data)
+
+    @action(detail=True, methods=['post'])
+    def complete_sprint(self, request, pk=None):
+        sprint = self.get_object()
+        sprint.status = 'completed'
+        sprint.save()
+        # Tamamlanmamış görevleri Backlog'a (sprint=None) aktar
+        sprint.tasks.exclude(state='done').update(sprint=None)
+        return Response(SprintSerializer(sprint).data)
+
 class TaskViewSet(viewsets.ModelViewSet):
     serializer_class = TaskSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -49,8 +78,23 @@ class TaskViewSet(viewsets.ModelViewSet):
             return Task.objects.none()
             
         if self.request.user.is_staff:
-            return Task.objects.all()
-        return Task.objects.filter(assignee=self.request.user)
+            queryset = Task.objects.all()
+        else:
+            queryset = Task.objects.filter(assignee=self.request.user)
+
+        # Sprint filtreleme
+        sprint_param = self.request.query_params.get('sprint')
+        if sprint_param:
+            if sprint_param in ['null', 'backlog']:
+                queryset = queryset.filter(sprint__isnull=True)
+            else:
+                queryset = queryset.filter(sprint_id=sprint_param)
+
+        active_sprint = self.request.query_params.get('active_sprint')
+        if active_sprint == 'true':
+            queryset = queryset.filter(sprint__status='active')
+
+        return queryset
 
     def perform_create(self, serializer):
         if self.request.user.is_staff:

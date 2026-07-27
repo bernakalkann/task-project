@@ -1,241 +1,157 @@
 import os
+from datetime import date, timedelta
 from django.core.management.base import BaseCommand
 from django.core.management import call_command
 from django.contrib.auth import get_user_model
-from tasks.models import Task, Comment
+from tasks.models import Task, Comment, Sprint
 
 User = get_user_model()
 
 class Command(BaseCommand):
-    help = 'Runs migrations and initializes the database with default admin, standard users, and sample tasks/comments.'
+    help = 'Runs migrations and initializes the database with default admin, users, sprints, and sample tasks/comments.'
 
     def handle(self, *args, **options):
         self.stdout.write(self.style.WARNING("Running database migrations..."))
-        # Run migrations
         call_command('migrate')
         self.stdout.write(self.style.SUCCESS("Migrations completed successfully."))
 
         self.stdout.write(self.style.WARNING("Seeding database users..."))
 
-        # Create Admin
-        admin_username = 'admin'
-        admin_email = 'admin@example.com'
-        admin_password = 'adminpassword'
-        
-        admin_user, created = User.objects.get_or_create(username=admin_username, defaults={
-            'email': admin_email,
-            'is_staff': True,
-            'is_superuser': True,
-            'department': 'Yönetim'
-        })
-        if created:
-            admin_user.set_password(admin_password)
-            admin_user.save()
-            self.stdout.write(self.style.SUCCESS(f"Superuser '{admin_username}' created successfully."))
-        else:
-            self.stdout.write(self.style.NOTICE(f"Superuser '{admin_username}' already exists."))
+        users_data = [
+            ('admin', 'admin@example.com', 'AdminPassword123!', True, 'Yönetim'),
+            ('beyza', 'beyza@example.com', 'BeyzaPassword123!', True, 'Yönetim'),
+            ('user1', 'user1@example.com', 'User1Password123!', False, 'Backend Development'),
+            ('user2', 'user2@example.com', 'User2Password123!', False, 'Frontend Development'),
+            ('ahmet.dev', 'ahmet@example.com', 'AhmetPassword123!', False, 'Fullstack Development'),
+            ('canan.qa', 'canan@example.com', 'CananPassword123!', False, 'QA & Testing'),
+            ('mehmet.pm', 'mehmet@example.com', 'MehmetPassword123!', False, 'Product Management'),
+            ('zeynep.ui', 'zeynep@example.com', 'ZeynepPassword123!', False, 'UI/UX Design')
+        ]
 
-        # Create user1
-        user1_username = 'user1'
-        user1_email = 'user1@example.com'
-        user1_password = 'user1password'
-        
-        user1, created = User.objects.get_or_create(username=user1_username, defaults={
-            'email': user1_email,
-            'is_staff': False,
-            'is_superuser': False,
-            'department': 'Backend Development'
-        })
-        if created:
-            user1.set_password(user1_password)
-            user1.save()
-            self.stdout.write(self.style.SUCCESS(f"User '{user1_username}' created successfully."))
-        else:
-            self.stdout.write(self.style.NOTICE(f"User '{user1_username}' already exists."))
+        created_users = {}
+        for username, email, pwd, is_staff, dept in users_data:
+            u, created = User.objects.get_or_create(username=username, defaults={
+                'email': email,
+                'is_staff': is_staff,
+                'is_superuser': is_staff,
+                'department': dept
+            })
+            if created or not u.check_password(pwd):
+                u.set_password(pwd)
+                u.save()
+            created_users[username] = u
+            self.stdout.write(self.style.SUCCESS(f"User '{username}' ready."))
 
-        # Create user2
-        user2_username = 'user2'
-        user2_email = 'user2@example.com'
-        user2_password = 'user2password'
-        
-        user2, created = User.objects.get_or_create(username=user2_username, defaults={
-            'email': user2_email,
-            'is_staff': False,
-            'is_superuser': False,
-            'department': 'Frontend Development'
-        })
-        if created:
-            user2.set_password(user2_password)
-            user2.save()
-            self.stdout.write(self.style.SUCCESS(f"User '{user2_username}' created successfully."))
-        else:
-            self.stdout.write(self.style.NOTICE(f"User '{user2_username}' already exists."))
+        admin_user = created_users['admin']
+        user1 = created_users['user1']
+        user2 = created_users['user2']
+        ahmet = created_users['ahmet.dev']
+        canan = created_users['canan.qa']
+        mehmet = created_users['mehmet.pm']
+        zeynep = created_users['zeynep.ui']
+
+        self.stdout.write(self.style.WARNING("Seeding sprints..."))
+
+        sprint_active, _ = Sprint.objects.get_or_create(
+            name="Sprint 14 - Güvenlik & Sprint Yönetimi",
+            defaults={
+                'goal': "OTP 2-step kimlik doğrulama, AES veri şifreleme ve Sprint & Backlog ekranlarının canlıya alınması.",
+                'start_date': date.today() - timedelta(days=3),
+                'end_date': date.today() + timedelta(days=11),
+                'status': 'active'
+            }
+        )
+
+        sprint_future, _ = Sprint.objects.get_or_create(
+            name="Sprint 15 - Real-time Collaboration & WebSockets",
+            defaults={
+                'goal': "Django Channels ile canlı pano senkronizasyonu ve @mention bildirimlerinin eklenmesi.",
+                'start_date': date.today() + timedelta(days=12),
+                'end_date': date.today() + timedelta(days=26),
+                'status': 'future'
+            }
+        )
 
         self.stdout.write(self.style.WARNING("Seeding sample tasks..."))
 
-        # Create Task 1
-        t1, created = Task.objects.get_or_create(
-            title="Sistem Altyapı Kurulumu",
-            defaults={
-                'definition': "PostgreSQL veritabanı kurulumu ve Django ayarlarının yapılması.",
-                'creator': admin_user,
-                'assignee': user1,
-                'state': 'to do',
-                'priority': 'medium',
-                'task_type': 'task',
-                'duration': 12,
-                'due_date': '2026-08-01',
-                'epic': 'Kullanıcı Yönetimi',
-                'version': 'v1.0'
-            }
-        )
-        if created:
-            self.stdout.write(self.style.SUCCESS(f"Task '{t1.title}' created."))
+        tasks_list = [
+            # Active Sprint Tasks
+            {
+                'title': "Sistem Altyapı Kurulumu ve Docker Entegrasyonu",
+                'definition': "PostgreSQL veritabanı kurulumu, Nginx reverse proxy ve Docker Compose ortamının hazırlanması.",
+                'creator': admin_user, 'assignee': user1, 'sprint': sprint_active, 'state': 'done',
+                'priority': 'high', 'task_type': 'task', 'duration': 12, 'story_points': 5, 'due_date': '2026-08-01', 'epic': 'Kullanıcı Yönetimi'
+            },
+            {
+                'title': "OTP 2-Step Authentication & Throttling",
+                'definition': "Giriş ekranında 6 haneli OTP kodu üretimi, secrets modülü entegrasyonu ve rate limiting eklenmesi.",
+                'creator': admin_user, 'assignee': ahmet, 'sprint': sprint_active, 'state': 'in code review',
+                'priority': 'critical', 'task_type': 'task', 'duration': 8, 'story_points': 8, 'due_date': '2026-07-28', 'epic': 'Güvenlik & OTP'
+            },
+            {
+                'title': "AES-256 Payload Encryption Interceptor",
+                'definition': "Backend ve Frontend arasında hassas verilerin şifreli iletilmesi için Axios interceptor yazılması.",
+                'creator': mehmet, 'assignee': user2, 'sprint': sprint_active, 'state': 'in progress',
+                'priority': 'high', 'task_type': 'story', 'duration': 16, 'story_points': 5, 'due_date': '2026-07-29', 'epic': 'Güvenlik & OTP'
+            },
+            {
+                'title': "Backlog & Sprint Planlama Ekran Tasarımı",
+                'definition': "Jira tarzı drag-and-drop Sprint ve Backlog planlama arayüzünün Vuetify ile kodlanması.",
+                'creator': zeynep, 'assignee': user2, 'sprint': sprint_active, 'state': 'in progress',
+                'priority': 'medium', 'task_type': 'story', 'duration': 20, 'story_points': 5, 'due_date': '2026-07-30', 'epic': 'Kanban & Sprint'
+            },
+            {
+                'title': "Admin Log İzleme Ekranı ve Filtreleme",
+                'definition': "RequestLogMiddleware ile atılan isteklerin IP, User-Agent ve Endpoint bazlı filtrelenmesi.",
+                'creator': admin_user, 'assignee': user1, 'sprint': sprint_active, 'state': 'done',
+                'priority': 'medium', 'task_type': 'task', 'duration': 6, 'story_points': 3, 'due_date': '2026-07-26', 'epic': 'Loglama'
+            },
+            {
+                'title': "QA Otomasyon Testlerinin Koşulması",
+                'definition': "Giriş, OTP, Şifre Sıfırlama ve Yetki kontrolleri için Selenium/Playwright E2E testleri.",
+                'creator': admin_user, 'assignee': canan, 'sprint': sprint_active, 'state': 'in test',
+                'priority': 'high', 'task_type': 'task', 'duration': 10, 'story_points': 3, 'due_date': '2026-07-31', 'epic': 'Kalite & Test'
+            },
 
-        # Create Task 2
-        t2, created = Task.objects.get_or_create(
-            title="API Endpoint'lerinin Entegrasyonu",
-            defaults={
-                'definition': "Kullanıcı CRUD ve Görev yönetim API'lerinin REST standartlarına göre hazırlanması.",
-                'creator': admin_user,
-                'assignee': user1,
-                'state': 'in progress',
-                'priority': 'high',
-                'task_type': 'task',
-                'duration': 8,
-                'due_date': '2026-07-25',
-                'epic': 'Kullanıcı Yönetimi',
-                'version': 'v1.0'
+            # Backlog Tasks (sprint = None)
+            {
+                'title': "GitHub Webhook & Auto PR Status Integration",
+                'definition': "Commit atıldığında veya PR birleştirildiğinde ilgili kartın otomatik DONE yapılması.",
+                'creator': mehmet, 'assignee': ahmet, 'sprint': None, 'state': 'to do',
+                'priority': 'high', 'task_type': 'story', 'duration': 14, 'story_points': 8, 'due_date': '2026-08-10', 'epic': 'DevOps Entegrasyon'
+            },
+            {
+                'title': "Slack Kanalı Anlık Bildirim Botu",
+                'definition': "Kritik seviyede bir Hata (Bug) açıldığında Slack kanalına otomatik webhook mesajı atılması.",
+                'creator': mehmet, 'assignee': user1, 'sprint': None, 'state': 'to do',
+                'priority': 'medium', 'task_type': 'task', 'duration': 8, 'story_points': 3, 'due_date': '2026-08-12', 'epic': 'DevOps Entegrasyon'
+            },
+            {
+                'title': "WebSocket (Django Channels) Canlı Pano Güncellemesi",
+                'definition': "Panoda bir kart sürüklendiğinde diğer kullanıcıların ekranında sayfa yenilenmeden güncellenmesi.",
+                'creator': zeynep, 'assignee': user2, 'sprint': None, 'state': 'to do',
+                'priority': 'critical', 'task_type': 'story', 'duration': 30, 'story_points': 13, 'due_date': '2026-08-15', 'epic': 'Kanban & Sprint'
+            },
+            {
+                'title': "Mobil Bildirim Servisinde Gecikme Hatası",
+                'definition': "Android ve iOS bildirim servisinde Firebase mesaj iletim sürelerinin incelenmesi.",
+                'creator': canan, 'assignee': ahmet, 'sprint': None, 'state': 'blocked dev',
+                'priority': 'critical', 'task_type': 'bug', 'duration': 18, 'story_points': 5, 'due_date': '2026-08-05', 'epic': 'Kalite & Test'
+            },
+            {
+                'title': "Fatura & Abonelik Modülü Arayüz Tasarımı",
+                'definition': "Kurumsal müşteriler için paket seçimi ve kredi kartı ödeme adımlarının çizimi.",
+                'creator': zeynep, 'assignee': zeynep, 'sprint': None, 'state': 'to do',
+                'priority': 'low', 'task_type': 'story', 'duration': 12, 'story_points': 2, 'due_date': '2026-08-20', 'epic': 'Ödeme & Fatura'
             }
-        )
-        if created:
-            self.stdout.write(self.style.SUCCESS(f"Task '{t2.title}' created."))
-            
-            # Add comments
-            Comment.objects.create(
-                task=t2,
-                user=user1,
-                description="API testleri lokal ortamda tamamlandı, staging sunucusuna deploy edilecek."
+        ]
+
+        for item in tasks_list:
+            t, created = Task.objects.get_or_create(
+                title=item['title'],
+                defaults=item
             )
-            Comment.objects.create(
-                task=t2,
-                user=admin_user,
-                description="Harika, ellerine sağlık. Database migrasyonlarını kontrol ettin mi?"
-            )
-            self.stdout.write(self.style.SUCCESS("Sample comments added to API task."))
-
-        # Create Task 3
-        t3, created = Task.objects.get_or_create(
-            title="Arayüz Tasarımı ve Hata Düzeltmeleri",
-            defaults={
-                'definition': "Vuetify bileşenlerinin entegre edilmesi ve responsive side menu tasarımının tamamlanması.",
-                'creator': admin_user,
-                'assignee': user2,
-                'state': 'done',
-                'priority': 'low',
-                'task_type': 'story',
-                'duration': 24,
-                'due_date': '2026-07-15',
-                'epic': 'Kanban Panosu',
-                'version': 'v1.1'
-            }
-        )
-        if created:
-            self.stdout.write(self.style.SUCCESS(f"Task '{t3.title}' created."))
-
-        # Create Task 4
-        t4, created = Task.objects.get_or_create(
-            title="Kod Gözden Geçirme (Code Review)",
-            defaults={
-                'definition': "Yazılan yeni API endpoint'lerinin ve serializer validasyon kurallarının PR üzerinden incelenmesi.",
-                'creator': admin_user,
-                'assignee': user1,
-                'state': 'in code review',
-                'priority': 'medium',
-                'task_type': 'task',
-                'duration': 4,
-                'due_date': '2026-07-28',
-                'epic': 'Kanban Panosu',
-                'version': 'v1.1'
-            }
-        )
-        if created:
-            self.stdout.write(self.style.SUCCESS(f"Task '{t4.title}' created."))
-
-        # Create Task 5
-        t5, created = Task.objects.get_or_create(
-            title="Docker Yapılandırma Hatası",
-            defaults={
-                'definition': "Lokal Docker ortamında Nginx port çakışması nedeniyle geliştirme engellendi.",
-                'creator': user1,
-                'assignee': user1,
-                'state': 'blocked dev',
-                'priority': 'critical',
-                'task_type': 'bug',
-                'duration': 16,
-                'due_date': '2026-07-22',
-                'epic': 'Raporlama & CSV',
-                'version': 'v1.1'
-            }
-        )
-        if created:
-            self.stdout.write(self.style.SUCCESS(f"Task '{t5.title}' created."))
-
-        # Create Task 6
-        t6, created = Task.objects.get_or_create(
-            title="Profil Sayfası Test Hazırlığı",
-            defaults={
-                'definition': "Yeni eklenen profil güncelleme ve Base64 resim yükleme fonksiyonlarının test senaryolarının yazılması.",
-                'creator': admin_user,
-                'assignee': user2,
-                'state': 'ready for test',
-                'priority': 'high',
-                'task_type': 'story',
-                'duration': 18,
-                'due_date': '2026-07-30',
-                'epic': 'Kullanıcı Yönetimi',
-                'version': 'v2.0'
-            }
-        )
-        if created:
-            self.stdout.write(self.style.SUCCESS(f"Task '{t6.title}' created."))
-
-        # Create Task 7
-        t7, created = Task.objects.get_or_create(
-            title="Entegrasyon Testlerinin Koşulması",
-            defaults={
-                'definition': "Frontend ve Backend arasındaki API haberleşmesinin uçtan uca (E2E) test edilmesi.",
-                'creator': admin_user,
-                'assignee': user2,
-                'state': 'in test',
-                'priority': 'medium',
-                'task_type': 'task',
-                'duration': 6,
-                'due_date': '2026-07-27',
-                'epic': 'Kanban Panosu',
-                'version': 'v2.0'
-            }
-        )
-        if created:
-            self.stdout.write(self.style.SUCCESS(f"Task '{t7.title}' created."))
-
-        # Create Task 8
-        t8, created = Task.objects.get_or_create(
-            title="Mobil Bildirim Test Hatası",
-            defaults={
-                'definition': "Test ortamında mobil cihazlara anlık bildirimlerin ulaşmaması hatası araştırılıyor.",
-                'creator': user2,
-                'assignee': user2,
-                'state': 'blocked test',
-                'priority': 'critical',
-                'task_type': 'bug',
-                'duration': 20,
-                'due_date': '2026-07-23',
-                'epic': 'Raporlama & CSV',
-                'version': 'v2.0'
-            }
-        )
-        if created:
-            self.stdout.write(self.style.SUCCESS(f"Task '{t8.title}' created."))
+            if created:
+                self.stdout.write(self.style.SUCCESS(f"Task '{t.title}' created."))
 
         self.stdout.write(self.style.SUCCESS("Database initialization and seeding finished successfully!"))

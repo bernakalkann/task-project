@@ -3,12 +3,13 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     TaskViewSet, CommentViewSet, NotificationViewSet, UserViewSet, 
     CustomObtainAuthToken, VerifyOTPView, ForgotPasswordView, ResetPasswordView, 
-    ProfileView, AttachmentViewSet, RequestLogViewSet
+    ProfileView, AttachmentViewSet, RequestLogViewSet, SprintViewSet
 )
 
 router = DefaultRouter()
 router.register(r'users', UserViewSet)
 router.register(r'tasks', TaskViewSet, basename='task')
+router.register(r'sprints', SprintViewSet, basename='sprint')
 router.register(r'comments', CommentViewSet)
 router.register(r'notifications', NotificationViewSet, basename='notification')
 router.register(r'attachments', AttachmentViewSet)

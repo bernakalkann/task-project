@@ -74,6 +74,19 @@
         no-data-text="Kayıtlı kullanıcı bulunamadı."
         class="elevation-0"
       >
+        <!-- Profil Avatarı Sütunu -->
+        <template v-slot:item.avatar="{ item }">
+          <v-avatar color="indigo-darken-2" size="40" class="elevation-1 border">
+            <v-img v-if="item.avatar" :src="item.avatar"></v-img>
+            <span v-else class="text-caption font-weight-bold">{{ (item.username || '').substring(0,2).toUpperCase() }}</span>
+          </v-avatar>
+        </template>
+
+        <!-- Kullanıcı Adı Sütunu -->
+        <template v-slot:item.username="{ item }">
+          <span class="font-weight-bold text-indigo-darken-4">{{ item.username }}</span>
+        </template>
+
         <!-- Doğum Tarihi Formatlama -->
         <template v-slot:item.birthday="{ item }">
           {{ formatDate(item.birthday) }}
@@ -249,6 +262,7 @@ const apiErrors = ref({})
 
 // Tablo Sütunları
 const headers = [
+  { title: 'Profil', key: 'avatar', sortable: false, align: 'center' },
   { title: 'Kullanıcı Adı', key: 'username', align: 'start' },
   { title: 'E-posta', key: 'email' },
   { title: 'Ad', key: 'first_name' },

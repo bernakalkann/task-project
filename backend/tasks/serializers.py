@@ -10,11 +10,17 @@ from .validators import validate_password_policy
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, required=False, style={'input_type': 'password'})
-    avatar = serializers.CharField(source='profile.avatar', read_only=True)
+    avatar = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = ['id', 'username', 'password', 'email', 'first_name', 'last_name', 'birthday', 'department', 'avatar']
+
+    def get_avatar(self, obj):
+        try:
+            return obj.profile.avatar
+        except Exception:
+            return ""
 
     def validate_password(self, value):
         if value:

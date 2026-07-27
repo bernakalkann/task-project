@@ -2,6 +2,8 @@
   <v-app :theme="currentTheme">
     <v-navigation-drawer
       v-if="isLoggedIn"
+      v-model="drawer"
+      :rail="rail"
       permanent
       app
       color="indigo-darken-4"
@@ -9,8 +11,10 @@
       elevation="4"
     >
       <v-list-item class="px-4 py-6">
-        <v-list-item-title class="text-h6 font-weight-bold text-uppercase tracking-wider">
-          <v-icon icon="mdi-orbit" class="mr-2" color="cyan-accent-3"></v-icon>
+        <template v-slot:prepend>
+          <v-icon icon="mdi-orbit" color="cyan-accent-3" size="28" class="mr-2"></v-icon>
+        </template>
+        <v-list-item-title v-if="!rail" class="text-h6 font-weight-bold text-uppercase tracking-wider">
           GÖREV TAKİP
         </v-list-item-title>
       </v-list-item>
@@ -23,10 +27,29 @@
         <v-list-item v-if="isStaff" prepend-icon="mdi-account-group" title="Kullanıcılar" value="users" to="/users" color="cyan-accent-3"></v-list-item>
         <v-list-item v-if="isStaff" prepend-icon="mdi-shield-text-outline" title="Sistem Logları" value="logs" to="/logs" color="cyan-accent-3"></v-list-item>
       </v-list>
+
+      <template v-slot:append>
+        <div class="pa-2 text-right border-t">
+          <v-btn
+            icon
+            variant="text"
+            color="grey-lighten-1"
+            size="small"
+            @click="rail = !rail"
+            :title="rail ? 'Menüyü Genişlet' : 'Menüyü Daralt'"
+          >
+            <v-icon :icon="rail ? 'mdi-chevron-right' : 'mdi-chevron-left'"></v-icon>
+          </v-btn>
+        </div>
+      </template>
     </v-navigation-drawer>
 
     <!-- Top Bar (Jira Style) -->
     <v-app-bar v-if="isLoggedIn" app color="surface" elevation="0" border class="px-3">
+      <!-- Left Drawer Hamburger Toggle Button -->
+      <v-btn icon variant="text" color="grey-darken-2" class="mr-1" @click="drawer = !drawer" title="Sol Menüyü Aç/Kapat">
+        <v-icon>mdi-menu</v-icon>
+      </v-btn>
       
       <!-- Nine Dots App Switcher Menu -->
       <v-menu location="bottom start">
@@ -319,6 +342,8 @@ const username = ref('')
 const notifications = ref([])
 const globalSearch = ref('')
 const helpDialog = ref(false)
+const drawer = ref(true)
+const rail = ref(false)
 
 const unreadCount = computed(() => notifications.value.filter(n => !n.is_read).length)
 const currentTheme = computed(() => theme.global.name.value)

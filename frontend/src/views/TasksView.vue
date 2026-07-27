@@ -20,8 +20,29 @@
       
       <!-- Aksiyon Butonları -->
       <v-col cols="12" sm="6" class="text-sm-right d-flex justify-sm-end gap-2 align-center">
-        <v-btn icon variant="text" size="small" color="grey-darken-2" title="Paylaş"><v-icon>mdi-share-variant-outline</v-icon></v-btn>
-        <v-btn icon variant="text" size="small" color="grey-darken-2" title="Genişlet"><v-icon>mdi-fullscreen</v-icon></v-btn>
+        <!-- PAYLAŞ BUTONU -->
+        <v-btn 
+          icon 
+          variant="text" 
+          size="small" 
+          color="indigo-darken-2" 
+          title="Panoyu Paylaş"
+          @click="shareDialog = true"
+        >
+          <v-icon>mdi-share-variant-outline</v-icon>
+        </v-btn>
+
+        <!-- TAM EKRAN BUTONU -->
+        <v-btn 
+          icon 
+          variant="text" 
+          size="small" 
+          color="indigo-darken-2" 
+          :title="isFullscreen ? 'Tam Ekrandan Çık' : 'Tam Ekran Modu'"
+          @click="toggleFullscreen"
+        >
+          <v-icon>{{ isFullscreen ? 'mdi-fullscreen-exit' : 'mdi-fullscreen' }}</v-icon>
+        </v-btn>
 
         <v-btn
           color="success"
@@ -199,11 +220,84 @@
         {{ wsConnected ? 'Real-Time WebSocket Bağlı' : 'Soket Bağlanıyor...' }}
       </v-chip>
 
-      <!-- Tasarım Görünümleri -->
+      <!-- Tasarım Görünümleri & Pano Eylemleri -->
       <div class="d-flex align-center gap-1 flex-shrink-0">
-        <v-btn icon variant="text" size="small" color="grey-darken-2"><v-icon>mdi-chart-bar</v-icon></v-btn>
-        <v-btn icon variant="text" size="small" color="grey-darken-2"><v-icon>mdi-tune-variant</v-icon></v-btn>
-        <v-btn icon variant="text" size="small" color="grey-darken-2"><v-icon>mdi-dots-horizontal</v-icon></v-btn>
+        <!-- 1. ANALİTİK VE RAPORLAR -->
+        <v-btn
+          icon
+          variant="text"
+          size="small"
+          color="indigo-darken-2"
+          @click="activeTab = 'Reports'"
+          title="Raporlar ve Analiz Panosu"
+        >
+          <v-icon>mdi-chart-bar</v-icon>
+        </v-btn>
+
+        <!-- 2. PANO GÖRÜNÜM AYARLARI MENÜSÜ -->
+        <v-menu location="bottom end">
+          <template v-slot:activator="{ props }">
+            <v-btn
+              icon
+              variant="text"
+              size="small"
+              color="indigo-darken-2"
+              v-bind="props"
+              title="Pano Özelleştirme Ayarları"
+            >
+              <v-icon>mdi-tune-variant</v-icon>
+            </v-btn>
+          </template>
+          <v-card width="240" class="pa-2 rounded-xl border elevation-4">
+            <v-list density="compact" nav>
+              <v-list-subheader class="font-weight-bold text-uppercase text-indigo">Pano Ayarları</v-list-subheader>
+              <v-divider class="my-1"></v-divider>
+              <v-list-item @click="compactMode = !compactMode">
+                <template v-slot:prepend>
+                  <v-icon :icon="compactMode ? 'mdi-checkbox-marked' : 'mdi-checkbox-blank-outline'" color="indigo"></v-icon>
+                </template>
+                <v-list-item-title class="text-caption font-weight-bold">Sıkışık Mod (Compact)</v-list-item-title>
+              </v-list-item>
+              <v-list-item @click="showAvatars = !showAvatars">
+                <template v-slot:prepend>
+                  <v-icon :icon="showAvatars ? 'mdi-checkbox-marked' : 'mdi-checkbox-blank-outline'" color="indigo"></v-icon>
+                </template>
+                <v-list-item-title class="text-caption font-weight-bold">Profil Resimlerini Göster</v-list-item-title>
+              </v-list-item>
+            </v-list>
+          </v-card>
+        </v-menu>
+
+        <!-- 3. DİĞER PANO EYLEMLERİ MENÜSÜ (ÜÇ NOKTA) -->
+        <v-menu location="bottom end">
+          <template v-slot:activator="{ props }">
+            <v-btn
+              icon
+              variant="text"
+              size="small"
+              color="indigo-darken-2"
+              v-bind="props"
+              title="Diğer Pano Seçenekleri"
+            >
+              <v-icon>mdi-dots-horizontal</v-icon>
+            </v-btn>
+          </template>
+          <v-card width="260" class="pa-2 rounded-xl border elevation-4">
+            <v-list density="compact" nav>
+              <v-list-subheader class="font-weight-bold text-uppercase text-indigo">Pano İşlemleri</v-list-subheader>
+              <v-divider class="my-1"></v-divider>
+              
+              <v-list-item prepend-icon="mdi-refresh" title="Panoyu Yenile" @click="fetchTasksSilently"></v-list-item>
+              <v-list-item prepend-icon="mdi-download" title="CSV Olarak Dışa Aktar" @click="exportTasks"></v-list-item>
+              <v-list-item prepend-icon="mdi-chart-timeline-variant" title="Zaman Çizelgesi (Timeline)" @click="activeTab = 'Timeline'"></v-list-item>
+              <v-list-item prepend-icon="mdi-calendar-month" title="Takvim Görünümü (Calendar)" @click="activeTab = 'Calendar'"></v-list-item>
+              <v-list-item prepend-icon="mdi-file-chart" title="Analitik Raporlar (Reports)" @click="activeTab = 'Reports'"></v-list-item>
+
+              <v-divider class="my-1"></v-divider>
+              <v-list-item prepend-icon="mdi-filter-remove" title="Tüm Filtreleri Temizle" color="red" @click="clearAllFilters"></v-list-item>
+            </v-list>
+          </v-card>
+        </v-menu>
       </div>
     </div>
 
@@ -1391,6 +1485,45 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <!-- PAYLAŞ DİYALOGU -->
+    <v-dialog v-model="shareDialog" max-width="460px">
+      <v-card class="pa-4 rounded-xl">
+        <v-card-title class="text-h6 font-weight-bold text-indigo-darken-4 d-flex align-center justify-space-between">
+          <div class="d-flex align-center">
+            <v-icon icon="mdi-share-variant" color="indigo" class="mr-2"></v-icon>
+            Görev Panosunu Paylaş
+          </div>
+          <v-btn icon="mdi-close" variant="text" size="small" @click="shareDialog = false"></v-btn>
+        </v-card-title>
+        
+        <v-card-text class="pt-2">
+          <p class="text-body-2 text-grey-darken-1 mb-3">Bu kanban panosunun bağlantısını ekip arkadaşlarınızla paylaşabilirsiniz:</p>
+          <v-text-field
+            v-model="shareUrl"
+            readonly
+            variant="outlined"
+            density="comfortable"
+            append-inner-icon="mdi-content-copy"
+            @click:append-inner="copyShareUrl"
+          ></v-text-field>
+        </v-card-text>
+
+        <v-card-actions class="px-4 pb-2">
+          <v-spacer></v-spacer>
+          <v-btn color="indigo" variant="flat" class="font-weight-bold text-capitalize" @click="copyShareUrl">
+            <v-icon icon="mdi-content-copy" class="mr-1" size="small"></v-icon>
+            Bağlantıyı Kopyala
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- BİLDİRİM SNACKBAR -->
+    <v-snackbar v-model="snackbar" color="indigo-darken-3" timeout="2500" rounded="pill">
+      <v-icon icon="mdi-check-circle" class="mr-2"></v-icon>
+      {{ snackbarText }}
+    </v-snackbar>
   </v-container>
 </template>
 
@@ -1407,6 +1540,51 @@ const usersList = ref([])
 const loading = ref(false)
 const wsConnected = ref(false)
 let socket = null
+
+const compactMode = ref(false)
+const showAvatars = ref(true)
+
+const shareDialog = ref(false)
+const shareUrl = computed(() => window.location.href)
+const isFullscreen = ref(false)
+const snackbar = ref(false)
+const snackbarText = ref('')
+
+const copyShareUrl = async () => {
+  try {
+    await navigator.clipboard.writeText(shareUrl.value)
+    snackbarText.value = 'Pano bağlantısı kopyalandı! 📋'
+    snackbar.value = true
+  } catch (e) {
+    console.error('Kopyalama başarısız', e)
+  }
+}
+
+const toggleFullscreen = () => {
+  if (!document.fullscreenElement) {
+    document.documentElement.requestFullscreen().then(() => {
+      isFullscreen.value = true
+    }).catch(err => {
+      console.error("Tam ekran başlatılamadı", err)
+    })
+  } else {
+    if (document.exitFullscreen) {
+      document.exitFullscreen().then(() => {
+        isFullscreen.value = false
+      })
+    }
+  }
+}
+
+const clearAllFilters = () => {
+  searchQuery.value = ''
+  selectedFilterUserId.value = null
+  selectedVersionFilter.value = ''
+  selectedEpicFilter.value = ''
+  selectedTypeFilter.value = ''
+  selectedPriorityFilter.value = ''
+  onlyMyTasksFilter.value = false
+}
 
 const worklogDays = [
   { dateNum: '21', dayName: 'Pzt' },

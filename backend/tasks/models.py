@@ -105,6 +105,7 @@ class UserProfile(models.Model):
     bio = models.TextField(blank=True)
     phone = models.CharField(max_length=20, blank=True)
     avatar = models.TextField(blank=True)  # Base64 image content
+    telegram_chat_id = models.CharField(max_length=50, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):

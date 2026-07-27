@@ -23,6 +23,7 @@ from .serializers import (
 from .permissions import IsCommentOwnerOrAdmin
 from .validators import validate_password_policy
 from .crypto_utils import encrypt_data
+from .telegram import send_telegram_otp
 
 logger = logging.getLogger(__name__)
 
@@ -180,7 +181,7 @@ class CustomObtainAuthToken(APIView):
         user.otp_attempt_count = 0
         user.save()
 
-        # E-posta gönderme akışı (Hassas veri terminale yazdırılmaz)
+        # E-posta & Telegram gönderme akışı
         email = user.email or 'user@example.com'
         try:
             send_mail(
@@ -190,8 +191,9 @@ class CustomObtainAuthToken(APIView):
                 recipient_list=[email],
                 fail_silently=True
             )
+            send_telegram_otp(otp, user)
         except Exception as e:
-            logger.error(f"OTP maili gönderilemedi: {e}")
+            logger.error(f"OTP maili/telegram gönderilemedi: {e}")
 
         # Maskelenmiş e-posta hazırlığı
         email_parts = email.split('@') if '@' in email else [email, '']
@@ -309,8 +311,9 @@ class ForgotPasswordView(APIView):
                     recipient_list=[user.email],
                     fail_silently=True
                 )
+                send_telegram_otp(reset_code, user)
             except Exception as e:
-                logger.error(f"Şifre sıfırlama maili gönderilemedi: {e}")
+                logger.error(f"Şifre sıfırlama maili/telegram gönderilemedi: {e}")
 
         return success_response
 

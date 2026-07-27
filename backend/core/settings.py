@@ -169,10 +169,10 @@ REST_FRAMEWORK = {
         'rest_framework.throttling.ScopedRateThrottle',
     ],
     'DEFAULT_THROTTLE_RATES': {
-        'anon': '100/day',
-        'user': '1000/day',
-        'otp_request': '5/hour',
-        'otp_verify': '5/minute',
+        'anon': '1000/day',
+        'user': '10000/day',
+        'otp_request': '100/minute',
+        'otp_verify': '100/minute',
     }
 }
 

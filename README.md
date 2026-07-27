@@ -1,147 +1,83 @@
-# Görev Takip ve İşbirliği Uygulaması (Task Collaboration App - GoJira)
+# 🚀 GoJira - Kurumsal Görev Takip ve İşbirliği Platformu
 
-Bu proje; **Django REST Framework** tabanlı backend, **Vue 3 + Vuetify** tabanlı frontend, **PostgreSQL** veritabanı ve **Docker + Nginx** multi-container ortamını içeren kurumsal bir görev takip, güvenlik ve işbirliği uygulamasıdır.
+**GoJira**, Jira stili Agile/Scrum süreç yönetimi, canlı WebSocket senkronizasyonu (Redis + Channels) ve Telegram 2FA güvenlik altyapısına sahip kurumsal bir görev takip platformudur.
 
 ---
 
-## 🚀 Hızlı Başlangıç (Docker ile Tek Komutla Çalıştırma)
+## ⚡ Hızlı Başlangıç (Docker ile Tek Komut)
 
-Projenin tüm servisleri (PostgreSQL DB, Django REST API, Nginx Reverse Proxy & Vue Frontend) Docker container'larında yapılandırılmıştır.
-
-Tek yapmanız gereken proje ana dizininde şu komutu çalıştırmaktır:
+Projenin tüm servisleri (**PostgreSQL 15**, **Redis 7**, **Django Daphne ASGI Backend**, **Nginx Vue 3 Frontend**) Docker ortamında hazırlanmıştır.
 
 ```bash
-docker compose up --build
+docker compose up -d --build
 ```
 
-Servisler başladıktan sonra:
-- **Uygulama Arayüzü (Frontend):** [http://localhost](http://localhost)
-- **Django REST API:** [http://localhost/api/](http://localhost/api/)
-- **Django Admin Paneli:** [http://localhost/admin/](http://localhost/admin/)
-
-> **Not:** Container'lar ayağa kalktığında varsayılan kullanıcılar ve veriler otomatik yüklenir.
+- 🌐 **Uygulama (Frontend):** [http://localhost](http://localhost)
+- ⚙️ **REST API:** [http://localhost/api/](http://localhost/api/)
+- 🛡️ **Admin Paneli:** [http://localhost/admin/](http://localhost/admin/)
 
 ---
 
-### 🔑 Varsayılan Giriş Bilgileri
+## 🔑 Varsayılan Giriş Bilgileri
 
-| Kullanıcı Rolü | Kullanıcı Adı | Şifre | Yetkiler |
+| Rol | Kullanıcı Adı | Şifre | Açıklama |
 | :--- | :--- | :--- | :--- |
-| **Sistem Yöneticisi (Admin)** | `admin` | `AdminPassword123!` | Tüm menülere erişim, Kullanıcı Yönetimi (Users CRUD), Sistem Logları (`/logs`), herkese görev atama. |
-| **Geliştirici (User 1)** | `user1` | `User1Password123!` | Görev Panosu, Profil paneli, kendine görev oluşturma, yorum ekleme. |
-| **Tasarımcı (User 2)** | `user2` | `User2Password123!` | Görev Panosu, Profil paneli, kendine görev oluşturma, yorum ekleme. |
+| **Sistem Yöneticisi (Admin)** | `beyza` | `Beyza1234!` | Tam Yetkili Admin & Kullanıcı Yönetimi |
+| **Admin Yöneticisi** | `admin` | `AdminPassword123!` | Sistem Yönetimi ve Log Ekranı (`/logs`) |
+| **Yazılım Geliştirici** | `ahmet.dev` | `User1Password123!` | Görev Panosu, Yorumlar, Subtask'ler |
 
 ---
 
-## 💻 Manuel (Yerel) Geliştirme Kurulumu
+## 🛠️ Öne Çıkan Özellikler ve Mimari
 
-### 1. Backend (Django REST Framework + PostgreSQL / SQLite)
+### 🟢 1. Canlı WebSocket ve Redis Katmanı (Real-Time Sync)
+- **Django Channels & Daphne (ASGI)**: Polling yapmadan milisaniyelik canlı sayfa güncellemeleri.
+- **Redis 7 Katmanı**: Çoklu sunucu/container ortamlarında kesintisiz canlı yayın veritabanı.
 
-```bash
-cd backend
+### 🔐 2. Telegram Bot 2FA Güvenlik Altyapısı
+- **Çoklu Kullanıcı (Multi-User) Telegram 2FA**: Giriş ve şifre sıfırlama işlemlerinde 6 haneli OTP kodu doğrudan kullanıcının kişisel Telegram hesabına (`@gojira_task_auth_bot`) iletilir.
+- **Zırhlanmış Güvenlik**: PBKDF2 hash'li OTP saklama, race-condition koruması (`select_for_update`) ve AES-256 Fernet veri şifreleme.
 
-# Sanal ortamı oluşturun ve aktif edin
-python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
-
-# Bağımlılıkları yükleyin
-pip install -r requirements.txt
-
-# Veritabanı migrasyonlarını uygulayın
-python manage.py migrate
-
-# Backend sunucusunu başlatın
-python manage.py runserver
-```
-
-### 2. Frontend (Vue 3 + Vuetify)
-
-```bash
-cd frontend
-
-# Bağımlılıkları yükleyin
-npm install
-
-# Geliştirme sunucusunu başlatın
-npm run dev
-```
+### 📋 3. Agile/Scrum & Görev Yönetimi
+- **Kanban Pano & Sprint Planlama (`/backlog`)**: Aktif sprint, efor puanlama (Story Points), görev sürükle-bırak.
+- **Jira Tempo Worklog (`Timeline`)**: Kullanıcı bazlı günlük/haftalık çalışma saatleri matris raporu.
+- **Jira Easy Calendar & ICS Feed Export (`Calendar`)**: 31 günlük takvim matrisi ve Google/Outlook/Apple Calendar (.ics) aktarımı.
+- **Yönetici Raporları (`Reports`)**: KPI kartları, 8 durumlu ilerleme çubukları ve analitik grafikler.
 
 ---
 
-## 🏗️ Mimari ve Teknolojik Unsurlar
+## 🏗️ Docker Container Mimarisi
 
-### Multi-Container Docker Mimarisi
 ```text
-               +----------------------------------+
-               |        Nginx Container (Port 80) |
-               | (Frontend SPA & Reverse Proxy)   |
-               +----------------+-----------------+
-                                |
-             +------------------+------------------+
-             |                                     |
-    /api/ ve /admin/ istekleri            Vue Static Files
-             |                                     |
-             v                                     v
-+---------------------------+            +-------------------+
-|  Django Backend (Port 8000)|            | Single Page App   |
-+------------+--------------+            +-------------------+
-             |
-             v
-+---------------------------+
-| PostgreSQL DB (Port 5432) |
-+---------------------------+
+               +-----------------------------------+
+               |     Nginx Container (Port 80)     |
+               | (Frontend SPA & Reverse Proxy)    |
+               +-----------------+-----------------+
+                                 |
+              +------------------+------------------+
+              |                                     |
+    /api/, /ws/ ve /admin/                  Vue Static Files
+              |                                     |
+              v                                     v
++---------------------------+             +-------------------+
+|  Django Daphne ASGI       |             | Single Page App   |
+|  Backend (Port 8000)      |             +-------------------+
++------+---------------+----+
+       |               |
+       v               v
++--------------+ +--------------+
+| PostgreSQL   | | Redis 7      |
+| DB (Port 5433)| | (Port 6379)  |
++--------------+ +--------------+
 ```
 
 ---
 
-## 📋 Proje Özellikleri ve Karşılanan Gereksinimler
+## 🧪 Birim Testler (Unit Tests)
 
-### 🔄 Sprint & Backlog Yönetimi (Agile / Scrum Modülü)
-- ✅ **Sprint Modeli (`Sprint`)**: İsmi, Hedefi, Başlangıç/Bitiş Tarihleri ve Durumu (`future`, `active`, `completed`) ile tam çevik süreç takibi.
-- ✅ **Story Points (Efor Puanlama)**: Görevlerin eforunu gösteren puanlama rozetleri (`1`, `2`, `3`, `5`, `8`, `13 pts`).
-- ✅ **Jira Tarzı Backlog & Sprint Planlama Arayüzü (`/backlog`)**:
-  - Üstte Aktif Sprint kartı, efor özeti ve *"Sprinti Tamamla"* / *"Sprinti Başlat"* butonları.
-  - Altta Backlog Havuzu (Planlanacak Görevler) ve tek tıkla *"Sprint'e Ekle"* / *"Backlog'a Al"* aktarımı.
-- ✅ **Zengin Örnek Veri Seti**: Sunum ve gösterim için 8 farklı kullanıcı (PM, QA, Developer, Designer) ve 11 adet eforlanmış örnek görev/story verisi.
-
-### 🛡️ Part 2 & Güvenlik Özellikleri
-- ✅ **Parola Karmaşıklık Kontrolü**: En az 8 karakter, rakam, sembol (`!@#$%^&*` vb.), büyük ve küçük harf içerme zorunluluğu (`validators.py`).
-- ✅ **2 Aşamalı OTP ile Giriş**: Kullanıcı adı/parola doğrulamasının ardından 6 haneli OTP kodu üretilerek e-posta atılır ve terminale yazdırılır. 5 dakika geçerlik süreli OTP doğrulanmadan Token verilmez.
-- ✅ **Standart Hata Mesajı**: User Enumeration saldırılarını engellemek için tüm kullanıcı adı/parola/OTP hatalarında standart olarak `"girdiğiniz bilgiler hatalı"` mesajı dönülür.
-- ✅ **Şifremi Unuttum ve Sıfırlama Akışı**: E-posta adresi ile şifre sıfırlama linki (`/reset-password?uid=...&token=...`) gönderilir ve yeni şifre parola politikasına göre güncellenir.
-- ✅ **FE ve BE Uçtan Uca Veri Şifreleme (`ENCRYPTION_KEY`)**: 
-  - Backend üzerindeki hassas uç noktalar (`/api/profile/`, `/api/tasks/summary/`, `/api/logs/`) AES-256-CBC ile şifreli paket (`encrypted_data`, `iv`) döndürür.
-  - Ağ (Network) sekmesinde veriler şifreli görünür. Frontend Axios interceptor'ı (`api.js`) Web Crypto API kullanarak verileri otomatik çözer.
-- ✅ **Admin-Only "Sistem Logları" Ekranı (`/logs`)**:
-  - `RequestLogMiddleware` ile atılan *bütün* HTTP isteklerinin IP adresi, kullanıcı, User-Agent, metod, endpoint ve durum kodu kaydedilir.
-  - Sadece Admin (`is_staff`) yetkisine sahip kullanıcıların erişebildiği aranabilir ve filtrelenebilir **Sistem Logları** ekranı sunulur.
-
-### 📋 Part 1 & Temel Özellikler
-- ✅ **Kullanıcı Modeli (`User`)**: `AbstractUser` tabanlı, kullanıcı adı, şifre, e-posta, ad, soyad, doğum günü, departman, `otp_code` ve `otp_created_at` alanları.
-- ✅ **Görev Modeli (`Task`)**: Durumlar (`TO DO`, `IN PROGRESS`, `DONE` vb.), öncelik, tip, süre, teslim tarihi ve self-referencing `parent` alanı ile **Subtask (Alt Görev)** desteği.
-- ✅ **Yorum ve Alt Görev Yönetimi**: Görevlere yorum ekleme, yorum sahibi veya admin düzenleme/silme yetkileri.
-- ✅ **Interaktif Üst Bar ve Menüler**: Çalışma Alanları, Projeler, Filtreler, Panolar, Arama ve Yardım dokümantasyon modalları.
-
----
-
-## 🧪 Birim Testlerin (Unit Tests) Çalıştırılması
-
-Tüm backend güvenlik, OTP, şifreleme, permission ve loglama testlerini çalıştırmak için:
+Backend güvenlik ve API birim testlerini çalıştırmak için:
 
 ```bash
 cd backend
 python manage.py test tasks
 ```
-
----
-
-## 📌 Commit Geçmişi
-
-Projedeki tüm Part 2 geliştirmeleri modüler commit'ler ile saklanmıştır:
-- `83195b2` - `feat: parola karmaşıklık politikası ve kontrol mekanizması eklendi`
-- `70dd37d` - `feat: 2 aşamalı OTP ile giriş özelliği ve standart hata mesajları eklendi`
-- `6d4196a` - `feat: e-posta ile şifremi unuttum ve şifre sıfırlama akışı eklendi`
-- `0c77ec6` - `feat: FE ve BE hassas veri iletimi için AES şifreleme altyapısı eklendi`
-- `1c66c4a` - `feat: admin istek loglama middleware ve Logs ekranı eklendi`
-- `08a91bc` - `refactor: genel kod temizlikleri, home view iyileştirmeleri ve kapsamlı birim testler eklendi`
-- `521b636` & `31dc53d` - `fix: üst bar butonlarının açılır menüleri ve tıklama yönlendirmeleri düzeltildi`

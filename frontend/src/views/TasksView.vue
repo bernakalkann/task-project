@@ -450,12 +450,153 @@
       </v-card>
     </div>
 
-    <!-- 5. OTHERS PLACEHOLDER -->
+    <!-- 5. TIMELINE (GANTT CHART / ZAMAN ÇİZELGESİ) -->
+    <div v-else-if="activeTab === 'Timeline'" class="mb-6">
+      <v-card class="pa-6 rounded-xl border elevation-1">
+        <div class="d-flex justify-space-between align-center mb-6">
+          <div>
+            <h3 class="text-h6 font-weight-bold text-indigo-darken-4 mb-1">
+              <v-icon icon="mdi-chart-gantt" color="indigo" class="mr-2"></v-icon>
+              Zaman Çizelgesi & Gantt Şeması
+            </h3>
+            <p class="text-caption text-grey-darken-1 mb-0">Görevlerin teslim tarihleri (due date) ve zaman akışına göre Gantt şeması</p>
+          </div>
+          <v-chip color="indigo" class="font-weight-bold" variant="flat" size="small">{{ tasks.length }} Görev Zamanlandı</v-chip>
+        </div>
+
+        <!-- TIMELINE GÖREV LİSTESİ VE ÇİZELGESİ -->
+        <div class="timeline-container border rounded-lg overflow-x-auto pa-4">
+          <div v-for="task in tasks" :key="task.id" class="mb-4 pb-3 border-b">
+            <div class="d-flex align-center justify-space-between mb-2">
+              <div class="d-flex align-center gap-2 cursor-pointer" @click="selectTask(task)">
+                <v-chip size="x-small" :color="getTypeColor(task.task_type)" class="font-weight-bold text-uppercase" variant="flat">
+                  {{ task.task_type }}
+                </v-chip>
+                <span class="font-weight-bold text-indigo-darken-4">TASK-{{ task.id }}: {{ task.title }}</span>
+              </div>
+              <div class="d-flex align-center gap-2">
+                <span class="text-caption text-grey-darken-1">Son Tarih: {{ formatShortDate(task.due_date) || 'Belirtilmedi' }}</span>
+                <v-chip size="x-small" :color="getPriorityColor(task.priority)" class="font-weight-bold text-uppercase" variant="tonal">
+                  {{ task.priority }}
+                </v-chip>
+                <v-chip size="x-small" color="indigo" class="font-weight-bold" variant="flat">
+                  {{ task.story_points || 1 }} pts
+                </v-chip>
+              </div>
+            </div>
+
+            <!-- GANTT BARI -->
+            <v-progress-linear
+              :model-value="task.state === 'done' ? 100 : (task.state === 'in progress' ? 50 : 25)"
+              :color="getPriorityColor(task.priority)"
+              height="12"
+              rounded
+              class="bg-grey-lighten-3 cursor-pointer"
+              @click="selectTask(task)"
+            ></v-progress-linear>
+          </div>
+        </div>
+      </v-card>
+    </div>
+
+    <!-- 6. CALENDAR (TAKVİM GÖRÜNÜMÜ) -->
+    <div v-else-if="activeTab === 'Calendar'" class="mb-6">
+      <v-card class="pa-6 rounded-xl border elevation-1">
+        <div class="d-flex justify-space-between align-center mb-6">
+          <div>
+            <h3 class="text-h6 font-weight-bold text-indigo-darken-4 mb-1">
+              <v-icon icon="mdi-calendar-month" color="indigo" class="mr-2"></v-icon>
+              Takvim Görünümü (Calendar View)
+            </h3>
+            <p class="text-caption text-grey-darken-1 mb-0">Görevlerin teslim tarihlerine göre günlük ajanda ve takvim dağılımı</p>
+          </div>
+          <v-chip color="indigo" class="font-weight-bold" variant="flat" size="small">Temmuz / Ağustos 2026</v-chip>
+        </div>
+
+        <v-row>
+          <v-col v-for="task in tasks" :key="task.id" cols="12" sm="6" md="4" lg="3">
+            <v-card class="pa-3 border rounded-lg hover-elevate cursor-pointer h-100" elevation="1" @click="selectTask(task)">
+              <div class="d-flex justify-space-between align-center mb-2">
+                <v-chip size="x-small" :color="getTypeColor(task.task_type)" class="font-weight-bold text-uppercase" variant="flat">
+                  {{ task.task_type }}
+                </v-chip>
+                <span class="text-caption font-weight-bold text-indigo">TASK-{{ task.id }}</span>
+              </div>
+              <div class="font-weight-bold text-subtitle-2 text-indigo-darken-4 mb-2 text-truncate">{{ task.title }}</div>
+              <div class="d-flex align-center justify-space-between text-caption text-grey-darken-1 border-top pt-2">
+                <span><v-icon size="12" class="mr-1">mdi-calendar-clock</v-icon>{{ formatShortDate(task.due_date) || 'Tarihsiz' }}</span>
+                <v-chip size="x-small" color="indigo" variant="tonal" class="font-weight-bold">{{ task.state }}</v-chip>
+              </div>
+            </v-card>
+          </v-col>
+        </v-row>
+      </v-card>
+    </div>
+
+    <!-- 7. REPORTS (RAPORLAR & ANALİTİK) -->
+    <div v-else-if="activeTab === 'Reports'" class="mb-6">
+      <v-card class="pa-6 rounded-xl border elevation-1">
+        <div class="d-flex justify-space-between align-center mb-6">
+          <div>
+            <h3 class="text-h6 font-weight-bold text-indigo-darken-4 mb-1">
+              <v-icon icon="mdi-file-chart" color="indigo" class="mr-2"></v-icon>
+              Proje Analitik & Raporlama Panosu
+            </h3>
+            <p class="text-caption text-grey-darken-1 mb-0">Efor puanları, öncelik kırılımları ve takım yükü raporları</p>
+          </div>
+          <v-btn color="indigo" variant="flat" size="small" class="text-capitalize font-weight-bold" @click="exportTasks">
+            <v-icon icon="mdi-download" class="mr-1" size="small"></v-icon> Raporu CSV İndir
+          </v-btn>
+        </div>
+
+        <v-row>
+          <!-- ÖNCELİK DAĞILIM RAPORU -->
+          <v-col cols="12" md="6">
+            <v-card class="pa-5 rounded-xl border" color="surface">
+              <h4 class="text-subtitle-1 font-weight-bold text-grey-darken-3 mb-4">Öncelik Kırılım Raporu (Priority)</h4>
+              <div v-for="p in ['critical', 'high', 'medium', 'low']" :key="p" class="mb-3">
+                <div class="d-flex justify-space-between text-body-2 font-weight-bold mb-1">
+                  <span class="text-uppercase">{{ p }}</span>
+                  <span>{{ tasks.filter(t => t.priority === p).length }} Görev</span>
+                </div>
+                <v-progress-linear
+                  :model-value="(tasks.filter(t => t.priority === p).length / (tasks.length || 1)) * 100"
+                  :color="getPriorityColor(p)"
+                  height="10"
+                  rounded
+                ></v-progress-linear>
+              </div>
+            </v-card>
+          </v-col>
+
+          <!-- GÖREV TİPİ RAPORU -->
+          <v-col cols="12" md="6">
+            <v-card class="pa-5 rounded-xl border" color="surface">
+              <h4 class="text-subtitle-1 font-weight-bold text-grey-darken-3 mb-4">Görev Tipi Dağılım Raporu (Type)</h4>
+              <div v-for="t in ['task', 'bug', 'story', 'epic']" :key="t" class="mb-3">
+                <div class="d-flex justify-space-between text-body-2 font-weight-bold mb-1">
+                  <span class="text-uppercase">{{ t }}</span>
+                  <span>{{ tasks.filter(tk => tk.task_type === t).length }} Görev</span>
+                </div>
+                <v-progress-linear
+                  :model-value="(tasks.filter(tk => tk.task_type === t).length / (tasks.length || 1)) * 100"
+                  :color="getTypeColor(t)"
+                  height="10"
+                  rounded
+                ></v-progress-linear>
+              </div>
+            </v-card>
+          </v-col>
+        </v-row>
+      </v-card>
+    </div>
+
+    <!-- 8. FALLBACK VIEW -->
     <div v-else class="mb-6">
       <v-card class="pa-10 text-center rounded-lg border" elevation="0">
         <v-icon size="64" color="blue-grey-lighten-2" class="mb-4">mdi-clock-outline</v-icon>
         <h3 class="text-h5 font-weight-bold text-grey-darken-3 mb-2">{{ activeTab }}</h3>
-        <p class="text-body-1 text-grey">Bu görünüm çok yakında GoJira projenize dahil edilecektir.</p>
+        <p class="text-body-1 text-grey">Görünüm yükleniyor...</p>
       </v-card>
     </div>
 

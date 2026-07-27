@@ -96,6 +96,14 @@ npm run dev
 
 ## 📋 Proje Özellikleri ve Karşılanan Gereksinimler
 
+### 🔄 Sprint & Backlog Yönetimi (Agile / Scrum Modülü)
+- ✅ **Sprint Modeli (`Sprint`)**: İsmi, Hedefi, Başlangıç/Bitiş Tarihleri ve Durumu (`future`, `active`, `completed`) ile tam çevik süreç takibi.
+- ✅ **Story Points (Efor Puanlama)**: Görevlerin eforunu gösteren puanlama rozetleri (`1`, `2`, `3`, `5`, `8`, `13 pts`).
+- ✅ **Jira Tarzı Backlog & Sprint Planlama Arayüzü (`/backlog`)**:
+  - Üstte Aktif Sprint kartı, efor özeti ve *"Sprinti Tamamla"* / *"Sprinti Başlat"* butonları.
+  - Altta Backlog Havuzu (Planlanacak Görevler) ve tek tıkla *"Sprint'e Ekle"* / *"Backlog'a Al"* aktarımı.
+- ✅ **Zengin Örnek Veri Seti**: Sunum ve gösterim için 8 farklı kullanıcı (PM, QA, Developer, Designer) ve 11 adet eforlanmış örnek görev/story verisi.
+
 ### 🛡️ Part 2 & Güvenlik Özellikleri
 - ✅ **Parola Karmaşıklık Kontrolü**: En az 8 karakter, rakam, sembol (`!@#$%^&*` vb.), büyük ve küçük harf içerme zorunluluğu (`validators.py`).
 - ✅ **2 Aşamalı OTP ile Giriş**: Kullanıcı adı/parola doğrulamasının ardından 6 haneli OTP kodu üretilerek e-posta atılır ve terminale yazdırılır. 5 dakika geçerlik süreli OTP doğrulanmadan Token verilmez.

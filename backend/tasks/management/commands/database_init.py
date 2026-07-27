@@ -3,7 +3,7 @@ from datetime import date, timedelta
 from django.core.management.base import BaseCommand
 from django.core.management import call_command
 from django.contrib.auth import get_user_model
-from tasks.models import Task, Comment, Sprint
+from tasks.models import Task, Comment, Sprint, UserProfile
 
 User = get_user_model()
 
@@ -28,6 +28,17 @@ class Command(BaseCommand):
             ('zeynep.ui', 'zeynep@example.com', 'ZeynepPassword123!', False, 'UI/UX Design')
         ]
 
+        AVATARS = {
+            'admin': 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%231e1b4b"/><text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" fill="%2338bdf8" font-size="32" font-weight="bold" font-family="sans-serif">👑 AD</text></svg>',
+            'beyza': 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%234c1d95"/><text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" fill="%23f472b6" font-size="32" font-weight="bold" font-family="sans-serif">👩‍💼 BY</text></svg>',
+            'user1': 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%230f766e"/><text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" fill="%232dd4bf" font-size="32" font-weight="bold" font-family="sans-serif">👨‍💻 U1</text></svg>',
+            'user2': 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%23be185d"/><text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" fill="%23f472b6" font-size="32" font-weight="bold" font-family="sans-serif">👩‍💻 U2</text></svg>',
+            'ahmet.dev': 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%231e3a8a"/><text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" fill="%2360a5fa" font-size="32" font-weight="bold" font-family="sans-serif">⚡ AD</text></svg>',
+            'canan.qa': 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%23b45309"/><text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" fill="%23fbbf24" font-size="32" font-weight="bold" font-family="sans-serif">🧪 CQ</text></svg>',
+            'mehmet.pm': 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%2315803d"/><text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" fill="%234ade80" font-size="32" font-weight="bold" font-family="sans-serif">📊 MP</text></svg>',
+            'zeynep.ui': 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><circle cx="50" cy="50" r="50" fill="%236b21a8"/><text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle" fill="%23c084fc" font-size="32" font-weight="bold" font-family="sans-serif">🎨 ZU</text></svg>'
+        }
+
         created_users = {}
         for username, email, pwd, is_staff, dept in users_data:
             u, created = User.objects.get_or_create(username=username, defaults={
@@ -39,6 +50,13 @@ class Command(BaseCommand):
             if created or not u.check_password(pwd):
                 u.set_password(pwd)
                 u.save()
+
+            # Profil avatar güncelleme
+            prof, _ = UserProfile.objects.get_or_create(user=u)
+            if not prof.avatar:
+                prof.avatar = AVATARS.get(username, '')
+                prof.save()
+
             created_users[username] = u
 
         admin_user = created_users['admin']

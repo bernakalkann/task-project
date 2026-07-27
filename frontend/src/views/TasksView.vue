@@ -267,6 +267,9 @@
                       Atanan: <strong>{{ task.assignee_username }}</strong>
                     </span>
                     <div class="d-flex align-center gap-1">
+                      <v-chip size="x-small" color="indigo-darken-2" variant="flat" class="font-weight-bold">
+                        {{ task.story_points || 1 }} pts
+                      </v-chip>
                       <v-chip v-if="task.duration" size="x-small" color="blue-grey" variant="flat" class="font-weight-bold">
                         {{ task.duration }}s
                       </v-chip>

@@ -17,7 +17,8 @@
       <v-divider></v-divider>
       <v-list density="compact" nav class="mt-4">
         <v-list-item prepend-icon="mdi-home" title="Anasayfa" value="home" to="/" color="cyan-accent-3"></v-list-item>
-        <v-list-item prepend-icon="mdi-clipboard-text-multiple" title="Görevler" value="tasks" to="/tasks" color="cyan-accent-3"></v-list-item>
+        <v-list-item prepend-icon="mdi-format-list-bulleted-triangle" title="Backlog & Sprintler" value="backlog" to="/backlog" color="cyan-accent-3"></v-list-item>
+        <v-list-item prepend-icon="mdi-clipboard-text-multiple" title="Görevler (Kanban)" value="tasks" to="/tasks" color="cyan-accent-3"></v-list-item>
         <v-list-item prepend-icon="mdi-account-circle" title="Profilim" value="profile" to="/profile" color="cyan-accent-3"></v-list-item>
         <v-list-item v-if="isStaff" prepend-icon="mdi-account-group" title="Kullanıcılar" value="users" to="/users" color="cyan-accent-3"></v-list-item>
         <v-list-item v-if="isStaff" prepend-icon="mdi-shield-text-outline" title="Sistem Logları" value="logs" to="/logs" color="cyan-accent-3"></v-list-item>
@@ -38,7 +39,8 @@
           <v-list density="compact" nav>
             <v-list-subheader class="font-weight-bold text-uppercase">GoJira Uygulamaları</v-list-subheader>
             <v-divider class="my-1"></v-divider>
-            <v-list-item prepend-icon="mdi-clipboard-text-multiple" title="Görev Panosu" @click="router.push('/tasks')"></v-list-item>
+            <v-list-item prepend-icon="mdi-format-list-bulleted-triangle" title="Backlog & Sprintler" @click="router.push('/backlog')"></v-list-item>
+            <v-list-item prepend-icon="mdi-clipboard-text-multiple" title="Görev Panosu (Kanban)" @click="router.push('/tasks')"></v-list-item>
             <v-list-item prepend-icon="mdi-chart-pie" title="Anasayfa Panosu" @click="router.push('/')"></v-list-item>
             <v-list-item prepend-icon="mdi-account-cog" title="Profilim" @click="router.push('/profile')"></v-list-item>
             <v-list-item v-if="isStaff" prepend-icon="mdi-account-group" title="Kullanıcı Yönetimi" @click="router.push('/users')"></v-list-item>
@@ -141,6 +143,7 @@
         <v-card width="260" class="rounded-lg elevation-4 border pa-2">
           <v-list density="compact">
             <v-list-subheader class="font-weight-bold">Mevcut Panolar</v-list-subheader>
+            <v-list-item prepend-icon="mdi-format-list-bulleted-triangle" title="Backlog & Sprint Panosu" @click="router.push('/backlog')"></v-list-item>
             <v-list-item prepend-icon="mdi-developer-board" title="Kanban Pano" @click="router.push('/tasks')"></v-list-item>
             <v-list-item prepend-icon="mdi-chart-line" title="İstatistik Panosu" @click="router.push('/')"></v-list-item>
             <v-list-item v-if="isStaff" prepend-icon="mdi-shield-text-outline" title="Admin Log Panosu" @click="router.push('/logs')"></v-list-item>

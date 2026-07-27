@@ -6,6 +6,7 @@ import UsersView from '../views/UsersView.vue'
 import ProfileView from '../views/ProfileView.vue'
 import ResetPassword from '../views/ResetPassword.vue'
 import LogsView from '../views/LogsView.vue'
+import BacklogView from '../views/BacklogView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -29,6 +30,11 @@ const router = createRouter({
       path: '/tasks',
       name: 'tasks',
       component: TasksView,
+    },
+    {
+      path: '/backlog',
+      name: 'backlog',
+      component: BacklogView,
     },
     {
       path: '/users',

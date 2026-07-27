@@ -175,29 +175,69 @@
       <!-- Notification Badge & Menu -->
       <v-menu location="bottom end" :close-on-content-click="false">
         <template v-slot:activator="{ props }">
-          <v-btn icon variant="text" color="grey-darken-2" class="mr-1" v-bind="props">
-            <v-badge :content="unreadCount" color="error" :model-value="unreadCount > 0" dot>
+          <v-btn icon variant="text" color="grey-darken-2" class="mr-1" v-bind="props" title="Bildirimler">
+            <v-badge :content="unreadCount" color="error" :model-value="unreadCount > 0">
               <v-icon size="22">mdi-bell-outline</v-icon>
             </v-badge>
           </v-btn>
         </template>
-        <v-card width="300" max-height="400" class="overflow-y-auto rounded-lg" border>
-          <v-list>
-            <v-list-subheader>Bildirimler</v-list-subheader>
-            <v-divider></v-divider>
-            <v-list-item 
-              v-for="notif in notifications" 
-              :key="notif.id" 
-              :title="notif.message" 
-              @click="markRead(notif.id)"
-              :class="{'bg-grey-lighten-4': notif.is_read}"
+
+        <v-card width="340" class="rounded-xl elevation-4 border">
+          <!-- BAŞLIK VE TÜMÜNÜ OKUNDU İŞARETLE -->
+          <div class="px-4 py-3 d-flex align-center justify-space-between bg-grey-lighten-4 border-b">
+            <div class="d-flex align-center">
+              <v-icon icon="mdi-bell-ring-outline" color="indigo" class="mr-2" size="small"></v-icon>
+              <span class="font-weight-bold text-subtitle-2 text-indigo-darken-4">Bildirimler</span>
+              <v-chip v-if="unreadCount > 0" size="x-small" color="error" class="ml-2 font-weight-bold" variant="flat">
+                {{ unreadCount }} Okunmamış
+              </v-chip>
+            </div>
+            <v-btn
+              v-if="unreadCount > 0"
+              size="x-small"
+              color="indigo"
+              variant="text"
+              class="font-weight-bold text-capitalize"
+              @click="markAllAsRead"
             >
-              <template v-slot:append>
-                <v-icon v-if="!notif.is_read" color="blue" size="small">mdi-circle-medium</v-icon>
+              Tümünü Okundu İşaretle
+            </v-btn>
+          </div>
+
+          <!-- BİLDİRİM LİSTESİ (5'ERLİ) -->
+          <v-list density="comfortable" class="pa-1 overflow-y-auto" style="max-height: 320px;">
+            <v-list-item 
+              v-for="notif in visibleNotifications" 
+              :key="notif.id" 
+              class="rounded-lg mb-1 pa-2 border-b-dotted cursor-pointer"
+              :class="{'bg-blue-lighten-5': !notif.is_read}"
+              @click="markRead(notif.id)"
+            >
+              <template v-slot:prepend>
+                <v-icon :icon="notif.is_read ? 'mdi-bell-check-outline' : 'mdi-circle-medium'" :color="notif.is_read ? 'grey' : 'blue-darken-2'" size="small" class="mr-2"></v-icon>
               </template>
+              <v-list-item-title class="text-caption font-weight-medium text-wrap">
+                {{ notif.message }}
+              </v-list-item-title>
             </v-list-item>
-            <v-list-item v-if="notifications.length === 0" title="Yeni bildirim yok"></v-list-item>
+
+            <v-list-item v-if="notifications.length === 0" class="text-center py-4">
+              <v-list-item-title class="text-caption text-grey-darken-1">Henüz bildirim bulunmuyor.</v-list-item-title>
+            </v-list-item>
           </v-list>
+
+          <!-- ALTTAN 5'ER ARTIRAN DAHA FAZLA GÖSTER BUTONU -->
+          <div v-if="notifications.length > displayedNotifCount" class="pa-2 border-t text-center bg-grey-lighten-5">
+            <v-btn
+              size="small"
+              variant="text"
+              color="indigo"
+              class="font-weight-bold text-capitalize w-100"
+              @click="loadMoreNotifications"
+            >
+              Daha Fazla Göster (+5)
+            </v-btn>
+          </div>
         </v-card>
       </v-menu>
 
@@ -304,6 +344,26 @@ const fetchUserProfile = async () => {
     userAvatar.value = response.data.avatar || ''
   } catch (e) {
     console.error("Profil yüklenemedi", e)
+  }
+}
+
+const displayedNotifCount = ref(5)
+
+const visibleNotifications = computed(() => {
+  return (notifications.value || []).slice(0, displayedNotifCount.value)
+})
+
+const loadMoreNotifications = () => {
+  displayedNotifCount.value += 5
+}
+
+// Tümünü okundu olarak işaretle
+const markAllAsRead = async () => {
+  try {
+    await api.post('notifications/mark_all_as_read/')
+    await fetchNotifications()
+  } catch (e) {
+    console.error("Tümünü okundu işaretleme başarısız", e)
   }
 }
 

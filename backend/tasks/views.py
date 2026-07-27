@@ -399,6 +399,11 @@ class NotificationViewSet(viewsets.ReadOnlyModelViewSet):
         notification.save()
         return Response({'status': 'ok'})
 
+    @action(detail=False, methods=['post'])
+    def mark_all_as_read(self, request):
+        Notification.objects.filter(user=request.user, is_read=False).update(is_read=True)
+        return Response({'status': 'ok'})
+
 class ProfileView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 

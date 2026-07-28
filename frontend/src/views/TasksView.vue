@@ -1935,7 +1935,8 @@ const fetchTasks = async () => {
 const fetchTasksSilently = async () => {
   try {
     const response = await api.get('tasks/')
-    tasks.value = response.value || response.data
+    const resData = response.data || response
+    tasks.value = Array.isArray(resData) ? resData : (resData.results || tasks.value)
   } catch (error) {}
 }
 
@@ -1963,6 +1964,7 @@ const onDrop = async (event, newState) => {
 
   try {
     await api.patch(`tasks/${taskId}/`, { state: newState })
+    notifyWebSocket(taskId)
     console.log("Görev sürüklenerek başarıyla taşındı.")
   } catch (error) {
     console.error("Görev taşınırken hata oluştu:", error)

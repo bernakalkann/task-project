@@ -1,12 +1,80 @@
 # 🚀 GoJira - Kurumsal Görev Takip ve İşbirliği Platformu
 
-**GoJira**, Jira stili Agile/Scrum süreç yönetimi, canlı WebSocket senkronizasyonu (Redis + Channels) ve Telegram 2FA güvenlik altyapısına sahip kurumsal bir görev takip platformudur.
+**GoJira**, Jira stili Agile/Scrum süreç yönetimi, canlı WebSocket senkronizasyonu (Redis 7 + Channels), Telegram 2FA güvenlik altyapısı ve gelişmiş kullanıcı/log yönetim paneline sahip kurumsal bir görev takip platformudur.
 
 ---
 
-## ⚡ Hızlı Başlangıç (Docker ile Tek Komut)
+## 🛠️ Kullanılan Teknolojiler (Technology Stack)
 
-Projenin tüm servisleri (**PostgreSQL 15**, **Redis 7**, **Django Daphne ASGI Backend**, **Nginx Vue 3 Frontend**) Docker ortamında hazırlanmıştır.
+| Katman | Teknoloji | Açıklama |
+| :--- | :--- | :--- |
+| **Backend Framework** | **Django 6 & DRF** | RESTful API, ORM, yetkilendirme ve iş mantığı mimarisi |
+| **Real-Time Engine** | **Django Channels & Daphne** | ASGI tabanlı canlı WebSocket iletişim sunucusu |
+| **In-Memory & Pub/Sub**| **Redis 7** | WebSocket yayınları için Channel Layer veritabanı |
+| **Frontend Framework** | **Vue.js 3 & Vuetify 3** | Reactive SPA arayüz ve Material Design bileşen kütüphanesi |
+| **Build Tool** | **Vite** | Yüksek hızlı ön yüz derleme ve paketleme aracı |
+| **Ana Veritabanı** | **PostgreSQL 15** | İlişkisel veritabanı yönetim sistemi |
+| **Web & Proxy Sunucu** | **Nginx** | Reverse Proxy, SSL termination ve statik dosya sunumu |
+| **Konteynerizasyon** | **Docker & Docker Compose** | Multi-container izolasyon ve dağıtım ortamı |
+| **2FA Bildirim Botu** | **Telegram Bot API** | Anlık 2FA doğrulama kodu (OTP) iletim servisi |
+| **Şifreleme & Güvenlik** | **AES-256 & PBKDF2** | Uçtan uca veri şifreleme ve parola hashleme altyapısı |
+
+---
+
+## 📸 Ekran Görüntüleri ve Modül Detayları
+
+### 📌 1. Görevler Kanban Panosu (Kanban Board & Real-Time Sync)
+*Çoklu sütunlu görev panosu, canlı WebSocket senkronizasyon durumu, görev öncelik rozetleri, atanan kullanıcı avatarları ve filtreleme paneli.*
+![Kanban Panosu](docs/screenshots/kanban_board.png)
+
+---
+
+### 📌 2. Backlog & Sprint Planlama (`/backlog`)
+*Sprint efor puanlamaları (Story Points), aktif sprint yönetimi, "Sprinti Tamamla" / "Başlat" kontrolleri ve Backlog havuzu görev aktarımı.*
+![Backlog ve Sprint Planlama](docs/screenshots/backlog_sprints.png)
+
+---
+
+### 📌 3. Kullanıcı Yönetim Paneli (`/users`)
+*Sistemdeki tüm kayıtlı kullanıcıların rolleri, e-posta adresleri, doğum tarihleri, özel profil avatarları ve departman yönetim tablosu.*
+![Kullanıcı Yönetimi](docs/screenshots/user_management.png)
+
+---
+
+### 📌 4. Admin Sistem İstek Logları (`/logs`)
+*Sistemde atılan tüm HTTP/API isteklerinin IP adresi, kullanıcı adı, HTTP metodu, endpoint ve durum kodu bazında canlı denetim günlüğü (Audit Trail).*
+![Sistem İstek Logları](docs/screenshots/system_logs.png)
+
+---
+
+### 📌 5. Kullanıcı Profil Sayfası (`/profile`)
+*Kullanıcı biyografisi, departman, pozisyon, iletişim bilgileri ve kişiselleştirilmiş avatar yönetim ekranı.*
+![Kullanıcı Profili](docs/screenshots/user_profile.png)
+
+---
+
+### 📲 6. Telegram Bot 2FA Güvenlik & Bildirim Ekranları (`@gojira_task_auth_bot`)
+*Kullanıcı adı bazı eşleştirilen kişisel Telegram hesabına 0.1 saniye içerisinde düşen 6 haneli 2FA OTP doğrulama mesajları ve bot profili.*
+
+| Telegram 2FA OTP Bildirimleri | Telegram Auth Bot Profili |
+| :---: | :---: |
+| <img src="docs/screenshots/telegram_otp_chat.png" width="360" alt="Telegram 2FA Bildirimi"/> | <img src="docs/screenshots/telegram_bot_profile.png" width="360" alt="Telegram Bot Profili"/> |
+
+---
+
+## 🔑 Varsayılan Giriş Bilgileri
+
+| Rol | Kullanıcı Adı | Şifre | Yetkiler |
+| :--- | :--- | :--- | :--- |
+| **Sistem Yöneticisi (Admin)** | `beyza` | `Beyza1234!` | Tam Yetkili Admin, Kullanıcı Yönetimi & Telegram 2FA |
+| **Admin Yöneticisi** | `admin` | `AdminPassword123!` | Sistem Yönetimi ve Log Ekranı (`/logs`) |
+| **Yazılım Geliştirici** | `ahmet.dev` | `User1Password123!` | Görev Panosu, Yorumlar, Subtask'ler |
+
+---
+
+## 🏗️ Docker Container Mimarisi & Hızlı Başlangıç
+
+Projenin tüm servisleri (**PostgreSQL 15**, **Redis 7**, **Django Daphne ASGI Backend**, **Nginx Vue 3 Frontend**) Docker ortamında tek komutla çalışır:
 
 ```bash
 docker compose up -d --build
@@ -15,38 +83,6 @@ docker compose up -d --build
 - 🌐 **Uygulama (Frontend):** [http://localhost](http://localhost)
 - ⚙️ **REST API:** [http://localhost/api/](http://localhost/api/)
 - 🛡️ **Admin Paneli:** [http://localhost/admin/](http://localhost/admin/)
-
----
-
-## 🔑 Varsayılan Giriş Bilgileri
-
-| Rol | Kullanıcı Adı | Şifre | Açıklama |
-| :--- | :--- | :--- | :--- |
-| **Sistem Yöneticisi (Admin)** | `beyza` | `Beyza1234!` | Tam Yetkili Admin & Kullanıcı Yönetimi |
-| **Admin Yöneticisi** | `admin` | `AdminPassword123!` | Sistem Yönetimi ve Log Ekranı (`/logs`) |
-| **Yazılım Geliştirici** | `ahmet.dev` | `User1Password123!` | Görev Panosu, Yorumlar, Subtask'ler |
-
----
-
-## 🛠️ Öne Çıkan Özellikler ve Mimari
-
-### 🟢 1. Canlı WebSocket ve Redis Katmanı (Real-Time Sync)
-- **Django Channels & Daphne (ASGI)**: Polling yapmadan milisaniyelik canlı sayfa güncellemeleri.
-- **Redis 7 Katmanı**: Çoklu sunucu/container ortamlarında kesintisiz canlı yayın veritabanı.
-
-### 🔐 2. Telegram Bot 2FA Güvenlik Altyapısı
-- **Çoklu Kullanıcı (Multi-User) Telegram 2FA**: Giriş ve şifre sıfırlama işlemlerinde 6 haneli OTP kodu doğrudan kullanıcının kişisel Telegram hesabına (`@gojira_task_auth_bot`) iletilir.
-- **Zırhlanmış Güvenlik**: PBKDF2 hash'li OTP saklama, race-condition koruması (`select_for_update`) ve AES-256 Fernet veri şifreleme.
-
-### 📋 3. Agile/Scrum & Görev Yönetimi
-- **Kanban Pano & Sprint Planlama (`/backlog`)**: Aktif sprint, efor puanlama (Story Points), görev sürükle-bırak.
-- **Jira Tempo Worklog (`Timeline`)**: Kullanıcı bazlı günlük/haftalık çalışma saatleri matris raporu.
-- **Jira Easy Calendar & ICS Feed Export (`Calendar`)**: 31 günlük takvim matrisi ve Google/Outlook/Apple Calendar (.ics) aktarımı.
-- **Yönetici Raporları (`Reports`)**: KPI kartları, 8 durumlu ilerleme çubukları ve analitik grafikler.
-
----
-
-## 🏗️ Docker Container Mimarisi
 
 ```text
                +-----------------------------------+

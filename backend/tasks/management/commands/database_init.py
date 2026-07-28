@@ -19,7 +19,7 @@ class Command(BaseCommand):
 
         users_data = [
             ('admin', 'admin@example.com', 'AdminPassword123!', True, 'Yönetim'),
-            ('beyza', 'beyza@example.com', 'BeyzaPassword123!', True, 'Yönetim'),
+            ('beyza', 'beyza@example.com', 'Beyza1234!', True, 'Yönetim'),
             ('user1', 'user1@example.com', 'User1Password123!', False, 'Backend Development'),
             ('user2', 'user2@example.com', 'User2Password123!', False, 'Frontend Development'),
             ('ahmet.dev', 'ahmet@example.com', 'AhmetPassword123!', False, 'Fullstack Development'),
